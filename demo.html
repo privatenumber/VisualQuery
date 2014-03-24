@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>VisualQuery.js jQuery Plugin Demo</title>
+		<script src="jquery-2.0.3.min.js"></script>
+		<script src="visualquery.js"></script>
+		<script>
+		$(function(){
+			$("div#anydiv1").visualquery({
+				strict: false,	//Limit inputs where parameters are defined,
+				parameters: [
+					{
+						name: "age",
+						operators: [ "=", "<", ">", "≤", "≥"],
+						values: [],
+						type: "number"
+					},
+				],
+				defaultQuery: [
+				],
+				callback: function(searched){
+					console.log(searched);
+
+					$("#mysql1").text("SELECT * FROM `people` WHERE " + searched.map(function(e){
+						return "`" + e.name + "` " + e.operator + " '" + e.value + "'";
+					}).join(" AND "));
+				}
+			});
+		});
+		</script>
+<link rel="stylesheet" type="text/css" href="http://necolas.github.com/normalize.css/2.1.3/normalize.css">
+
+		<style>
+
+/* Visual Query Container (Parameters + AutoComplete) */
+div#anydiv1{
+	margin: 10px;
+}
+
+div#anydiv1 *{
+	font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+
+/* Parameters Container */
+div#anydiv1 div.parameters{
+
+	cursor: text;
+
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	background-color: #fff;
+
+
+	padding: 5px;
+
+	min-height: 30px;
+	width: 600px;
+
+
+	margin: 0 auto;
+
+	overflow: scroll;
+
+    -webkit-transition: all 0.1s linear;
+    -o-transition: all 0.1s linear;
+    -moz-transition: all 0.1s linear;
+    -ms-transition: all 0.1s linear;
+    -kthtml-transition: all 0.1s linear;
+    transition: all 0.1s linear;
+}
+div#anydiv1 div.parameters.selected{
+	outline: none;
+	border-color: #9ecaed;
+	box-shadow: inset 0 0 5px #bce8f1;
+}
+
+
+/* Each Parameter */
+div#anydiv1 div.parameters div.parameter{
+	display: inline-block;
+	position: relative;
+	cursor: pointer;
+
+	height: 26px;
+	border-radius: 5px;
+
+	margin: 1px 2px;
+	padding: 0 8px;
+
+	border: 1px solid transparent;
+
+	color: #808080;
+
+	/* Unselectable */
+	-webkit-user-select: none; /* Chrome/Safari */        
+	-moz-user-select: none; /* Firefox */
+	-ms-user-select: none; /* IE10+ */
+	-o-user-select: none;
+	user-select: none;
+
+}
+	/* Hover */
+	div#anydiv1 div.parameters div.parameter:hover{
+		background-color: #eee;
+	}
+
+	/* Selected */
+	div#anydiv1 div.parameters div.parameter.selected{
+		background-color: #d9edf7;
+		border: 1px solid #bce8f1;
+	}
+	div#anydiv1 div.parameters div.parameter.selected input{
+		color: #3a87ad;
+		cursor: text;
+	}
+
+	/* Error */
+	div#anydiv1 div.parameters div.parameter.error{
+		color: #a94442;
+		background-color: #f2dede;
+		box-shadow: inset 0 0 0 1px #ebccd1;
+	}
+	div#anydiv1 div.parameters div.parameter.error input{
+		color: #a94442;
+	}
+
+
+/* Remove Button */
+div#anydiv1 div.parameters div.parameter span.remove{
+	margin: 0 6px 0 0px;
+}
+	/* Hover */
+	div#anydiv1 div.parameters div.parameter span.remove:hover{
+		font-weight: bold;
+	}
+
+
+/* Parameter Input */
+div#anydiv1 div.parameters div.parameter input{
+	cursor: inherit;
+	color: inherit;
+	background: transparent;
+
+	font-size: 14px;
+	font-weight: 200;
+
+	height: 100%;
+	margin: 0 2px;
+	padding: 0;
+
+	border: none;
+	box-shadow: none;
+	-moz-box-shadow: none;
+	-webkit-box-shadow: none;
+	outline: none;
+	
+}
+
+	/* Parameter Input Name */
+	div#anydiv1 div.parameters div.parameter .name{
+		font-weight: 600;
+		font-size: 12px;
+		text-transform: uppercase;
+	}
+
+	/* Parameter Input Focus */
+	div#anydiv1 div.parameters div.parameter .focus{
+		font-weight: normal;
+		font-size: 15px;
+		text-transform: none;
+	}
+
+/* AutoComplete */
+div#anydiv1 ul.autoComplete{
+	display: none;
+	position: absolute;
+	padding: 0;
+
+	border: 1px solid #ccc;
+	border-radius: 3%;
+	min-width: 30px;
+	background-color: #fefefe;
+	box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+
+	z-index: 1000;
+	float: left;
+	min-width: 100px;
+	padding: 4px 0;
+	margin: 2px 0 0;
+	font-size: 14px;
+	list-style: none;
+	background-color: #fff;
+	border: 1px solid #ccc;
+	border: 1px solid rgba(0,0,0,0.15);
+	border-radius: 4px;
+	-webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+	box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+	background-clip: padding-box;
+}
+
+div#anydiv1 ul.autoComplete li {
+	cursor: pointer;
+	text-decoration: none;
+	display: block;
+	padding: 3px 10px;
+	clear: both;
+	font-weight: normal;
+	line-height: 1.428571429;
+	color: #333;
+	white-space: nowrap;
+}
+
+div#anydiv1 ul.autoComplete li.selected{
+	color: #262626;
+	background-color: #eee;
+	text-decoration: none;
+}
+
+div#mysql1{
+	width: 612px;
+	margin: 0 auto;
+	font-size: 11px;
+	white-space: pre-wrap;
+	font-family: Courier;
+	line-height: 1.6em;
+}
+
+		</style>
+	</head>
+	<body>
+		<div id="anydiv1">ssdfs</div>
+		<div id="mysql1"></div>
+		<div id="mongo1"></div>
+
+		<div id="anydiv2"></div>
+	</body>
+</html>
