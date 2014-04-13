@@ -1,0 +1,35 @@
+{
+  "name": "VisualQuery",
+  "version": "0.0.0",
+  "description": "jQuery plugin that allows users to visually build queries",
+  "main": "jquery-2.0.3.min.js",
+  "dependencies": {},
+  "devDependencies": {
+    "grunt": "^0.4.4",
+    "grunt-contrib-concat": "^0.4.0",
+    "grunt-contrib-uglify": "^0.4.0",
+    "grunt-contrib-jshint": "^0.10.0",
+    "grunt-closure-compiler": "0.0.21",
+    "grunt-smash": "^0.1.0",
+    "grunt-contrib-watch": "^0.6.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hirokiosame/VisualQuery.git"
+  },
+  "keywords": [
+    "visual",
+    "query",
+    "autocomplete",
+    "search"
+  ],
+  "author": "Hiroki Osame",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hirokiosame/VisualQuery/issues"
+  },
+  "homepage": "https://github.com/hirokiosame/VisualQuery"
+}
