@@ -1,4 +1,4 @@
-/*! VisualQuery 2014-04-12 */
+/*! VisualQuery 2014-04-13 */
 (function($) {
     $.fn.focus = function(data, fn) {
         "use strict";
@@ -51,15 +51,48 @@
             datalists[parameter.name + "_operators"] = parameter.operators && parameter.operators;
             datalists[parameter.name + "_values"] = parameter.values && parameter.values;
         });
-        var autocomplete = function() {
-            var a$ = $("<ul></ul>"), options = [];
-            return {
-                lis: function(opts) {},
-                input: function() {},
-                hide: function() {},
-                show: function() {}
+        var autoComplete = function(options) {
+            var input, lis, padding, dom = $("<ul>", {
+                "class": "autoComplete"
+            }).css({
+                position: "absolute",
+                display: "none"
+            }).on("mouseover", "li", function() {
+                $(this).siblings(".selected").removeClass("selected");
+                $(this).addClass("selected");
+            }).on("mousedown", "li", function(e) {
+                e.preventDefault();
+                input.val($(e.target).attr("value")).blur().next("input").focus();
+            }), renderLis = function() {
+                var first = false;
+                dom.html(lis.map(function(li) {
+                    if (!li.match(input.val())) {
+                        return false;
+                    }
+                    return $("<li>", {
+                        text: li,
+                        "class": options.strict === true && first === false && (first = true) ? "selected" : ""
+                    }).attr("value", li);
+                }));
+                padding = padding || parseInt(dom.find("li").css("padding-left"));
+                return 1;
             };
-        }();
+            return {
+                $: dom,
+                targetInput: function(target) {
+                    return (input = $(target)) && this;
+                },
+                setLis: function(setLis) {
+                    return (lis = setLis) && renderLis() && this;
+                },
+                show: function(offset) {
+                    dom.show().offset({
+                        top: offset.top + input.height(),
+                        left: offset.left - (padding || 0)
+                    });
+                }
+            };
+        }(options);
         var Parameter = function(name, operator, value) {
             var self = this;
             this.$ = $("<div>", {
@@ -72,7 +105,7 @@
             }), this.name = $("<input>", {
                 type: "text",
                 spellcheck: "false",
-                autocomplete: "off",
+                autoComplete: "off",
                 id: "name",
                 value: name,
                 style: "width:1px;",
@@ -80,43 +113,48 @@
             }), this.operator = $("<input>", {
                 type: "text",
                 spellcheck: "false",
-                autocomplete: "off",
+                autoComplete: "off",
                 id: "operator",
                 value: operator,
                 style: "width:1px;"
             }), this.value = $("<input>", {
                 type: "text",
                 spellcheck: "false",
-                autocomplete: "off",
+                autoComplete: "off",
                 id: "value",
                 value: value,
                 style: "width:10px;"
-            })).on("keydown", "input", function(e) {
-                var input = $(e.target);
-                if (e.keyCode === 13) {
-                    input.next().focus();
+            })).on({
+                keydown: function(e) {
+                    var input = $(e.target);
+                    if (e.keyCode === 13) {
+                        input.next().focus();
+                    }
+                },
+                blur: function(e) {
+                    autoComplete.$.hide();
+                },
+                input: function(e) {
+                    var padding = {
+                        number: 17,
+                        date: 57
+                    };
+                    var self = $(this), value = self.val(), useText = value.length !== 0 ? value : self.attr("placeholder") || "";
+                    console.log(value, value.length, self.attr("type"));
+                    var shadow = $("<span>", {
+                        "class": options["class"]
+                    }).css(jQuery.extend({
+                        position: "absolute",
+                        width: "auto",
+                        visibility: "hidden",
+                        whiteSpace: "pre"
+                    }, self.css([ "font-size", "font-family", "font-weight", "font-style", "font-variant", "word-spacing", "letter-spacing", "text-indent", "text-rendering", "text-transform" ]))).text(useText).appendTo(container), width = shadow.width();
+                    shadow.remove();
+                    self.width(width + (padding[self.attr("type")] || 0) + 1 + (self.attr("list") !== undefined ? 20 : 0));
                 }
-            }).on("blur", "input", function(e) {}).on("input", "input", function(e) {
-                var padding = {
-                    number: 17,
-                    date: 57
-                };
-                var self = $(this), value = self.val(), useText = value.length !== 0 ? value : self.attr("placeholder") || "";
-                console.log(value, value.length, self.attr("type"));
-                var shadow = $("<span>", {
-                    "class": options["class"]
-                }).css(jQuery.extend({
-                    position: "absolute",
-                    width: "auto",
-                    visibility: "hidden",
-                    whiteSpace: "pre"
-                }, self.css([ "font-size", "font-family", "font-weight", "font-style", "font-variant", "word-spacing", "letter-spacing", "text-indent", "text-rendering", "text-transform" ]))).text(useText).appendTo(container), width = shadow.width();
-                shadow.remove();
-                self.width(width + (padding[self.attr("type")] || 0) + 1 + (self.attr("list") !== undefined ? 20 : 0));
-                autocomplete.input();
-            });
-            this.name.on("focus", function() {
-                console.log("Open autoComplete");
+            }, "input");
+            this.name.on("focus", function(e) {
+                autoComplete.targetInput(e.target).setLis(datalists.names).show($(this).offset());
             }).on("blur", function() {
                 var name = self.name.val();
                 var settings = parameters[name] || {};
@@ -174,6 +212,6 @@
             parameter.$[after !== undefined ? "insertAfter" : "prependTo"](after || this);
             parameter.name.focus();
         });
-        this.html(container);
+        this.html([ container, autoComplete.$ ]);
     };
 })(window.jQuery);

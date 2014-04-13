@@ -99,55 +99,53 @@
 /* Visual Query Container (Parameters + AutoComplete) */
 div#anydiv1{
 	margin: 10px;
+	position: relative;
 
 	*{
 		font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	}
 
 	/* AutoComplete */
-	ul.autoComplete{
+	ul{
+		/*
+		Default:
 		display: none;
 		position: absolute;
-		padding: 0;
-
-		border: 1px solid #ccc;
-		border-radius: 3%;
-		min-width: 30px;
-		background-color: #fefefe;
-		box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+		*/
 
 		z-index: 1000;
-		float: left;
 		min-width: 100px;
-		padding: 4px 0;
+		padding: 2px 0;
 		margin: 2px 0 0;
 		font-size: 14px;
 		list-style: none;
 		background-color: #fff;
-		border: 1px solid #ccc;
 		border: 1px solid rgba(0,0,0,0.15);
 		border-radius: 4px;
-		-webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
-		box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 		background-clip: padding-box;
-	}
 
-	ul.autoComplete li {
-		cursor: pointer;
-		text-decoration: none;
-		display: block;
-		padding: 3px 10px;
-		clear: both;
-		font-weight: normal;
-		line-height: 1.428571429;
-		color: #333;
-		white-space: nowrap;
-	}
 
-	ul.autoComplete li.selected{
-		color: #262626;
-		background-color: #eee;
-		text-decoration: none;
+		li {
+			cursor: pointer;
+			text-decoration: none;
+			display: block;
+			padding: 3px 10px;
+			clear: both;
+			font-weight: normal;
+			line-height: 1.428571429;
+			color: #333;
+			white-space: nowrap;
+			&:hover{
+				background-color: #eee;
+			}
+		}
+
+		li.selected{
+			color: #262626;
+			background-color: #eee;
+			text-decoration: none;
+		}
 	}
 
 
@@ -189,7 +187,6 @@ div#anydiv1{
 		/* Each Parameter */
 		div.parameter{
 			display: inline-block;
-			position: relative;
 			cursor: pointer;
 
 			height: 26px;

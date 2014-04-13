@@ -38,7 +38,6 @@ $.fn.visualquery = function(options){
 		names: []
 	};
 
-
 	// Transpose Parameter Options
 	options.parameters.forEach(function(parameter){
 		parameters[parameter.name] = parameter;
@@ -52,9 +51,9 @@ $.fn.visualquery = function(options){
 		// Datlist: Values
 		datalists[parameter.name+"_values"] = parameter.values && parameter.values;
 	});
-	
-	// Generate Datalists
 
+
+import "visualquery.autoComplete.js";
 import "visualquery.parameters.js";
 
 
@@ -141,8 +140,7 @@ import "visualquery.parameters.js";
 
 	;
 
-
 	// Render Visual Query
-	this.html(container);
+	this.html([container, autoComplete.$]);
 
 };

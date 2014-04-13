@@ -1,32 +1,8 @@
-var autocomplete = (function(){
-	var a$ = $("<ul></ul>"),
-		options = [];
-
-
-
-	return {
-
-		lis: function(opts){
-
-		},
-		input: function(){
-
-		},
-		hide: function(){
-
-		},
-		show: function(){
-
-		}
-
-	};
-})();
-
 // Create Parameter Class
 var Parameter = function(name, operator, value){
 	var self = this;
 
-	// DOM
+	// Create DOM
 	this.$ =	$("<div>", { "class":"parameter" })
 
 				.append(
@@ -37,116 +13,114 @@ var Parameter = function(name, operator, value){
 					}),
 					
 					// Name Input
-					( this.name = $('<input>', { "type": "text", "spellcheck": "false", "autocomplete": "off", "id": "name", "value": name, "style": "width:1px;", "list": "names" }) ),
+					( this.name = $('<input>', { "type": "text", "spellcheck": "false", "autoComplete": "off", "id": "name", "value": name, "style": "width:1px;", "list": "names" }) ),
 
 					// Operator Input
-					( this.operator = $('<input>', { "type": "text", "spellcheck": "false", "autocomplete": "off", "id": "operator", "value": operator, "style": "width:1px;" }) ),
+					( this.operator = $('<input>', { "type": "text", "spellcheck": "false", "autoComplete": "off", "id": "operator", "value": operator, "style": "width:1px;" }) ),
 
 					// Value Input
-					( this.value = $('<input>', { "type": "text", "spellcheck": "false", "autocomplete": "off", "id": "value", "value": value, "style": "width:10px;" }) )
+					( this.value = $('<input>', { "type": "text", "spellcheck": "false", "autoComplete": "off", "id": "value", "value": value, "style": "width:10px;" }) )
 
 				)
 
-				// On Input Keydown
-				.on("keydown", "input", function(e){
 
-					var input = $(e.target);
+	/* Bind Events to Inputs*/
 
-					// Enter
-					if( e.keyCode === 13 ){
+	.on({
 
-						input.next().focus();
-						// //If one of the dropdown options are selected, use that
-						// var selected = autoComplete.$.find(".selected");
-						// if( selected.length === 1){
-						// 	input.val(selected.attr("value"));
-						// }
+		"keydown": function(e){
 
-						// return focusNext(input);
-					}
-				})
+			var input = $(e.target);
 
-				.on("blur", "input", function(e){
+			// Enter
+			if( e.keyCode === 13 ){
 
-					// autocomplete.hide();
-				})
+				input.next().focus();
+				// //If one of the dropdown options are selected, use that
+				// var selected = autoComplete.$.find(".selected");
+				// if( selected.length === 1){
+				// 	input.val(selected.attr("value"));
+				// }
 
-				.on("input", "input", function(e) {
+				// return focusNext(input);
+			}
+		},
 
+		"blur": function(e){
+			autoComplete.$.hide();
+		},
 
-					// Padding for HTML5
-					var padding = {
-						"number" : 17,
-						"date": 57
-					};
-
-					var self = $(this),
-						value = self.val(),
-						useText = ( value.length !== 0 ? value : ( self.attr("placeholder") || "" ) );
-
-					console.log(value, value.length, self.attr("type"));
+		"input": function(e) {
 
 
-					// If No Length
-					//if( useText.length === 0 ){ return self.width( (padding[self.attr("type")] || 0) + 1 + (self.attr("list") !== undefined ? 20 : 0) ); }
+			// Padding for HTML5
+			var padding = {
+				"number" : 17,
+				"date": 57
+			};
 
-					// Render Shadow to Get Width
-					var shadow	=	$("<span>", { "class": options['class'] })
-										.css(jQuery.extend(
+			var self = $(this),
+				value = self.val(),
+				useText = ( value.length !== 0 ? value : ( self.attr("placeholder") || "" ) );
 
-											// Default Shadow CSS
-											{
-												position: 'absolute',
-												width: 'auto',
-												visibility: 'hidden',
-												whiteSpace: 'pre'
-											},
-
-											// Use Input CSS?
-											self.css([
-												'font-size',
-												'font-family',
-												'font-weight',
-												'font-style',
-												'font-variant',
-												'word-spacing',
-												'letter-spacing',
-												'text-indent',
-												'text-rendering',
-												'text-transform'
-											])
-										))
-										.text(useText)
-										.appendTo(container),
-						width	=	shadow.width();
-
-					// Remove Shadow
-					shadow.remove();
+			console.log(value, value.length, self.attr("type"));
 
 
-					// Add Padding if it has "list"
+			// If No Length
+			//if( useText.length === 0 ){ return self.width( (padding[self.attr("type")] || 0) + 1 + (self.attr("list") !== undefined ? 20 : 0) ); }
+
+			// Render Shadow to Get Width
+			var shadow	=	$("<span>", { "class": options['class'] })
+								.css(jQuery.extend(
+
+									// Default Shadow CSS
+									{
+										position: 'absolute',
+										width: 'auto',
+										visibility: 'hidden',
+										whiteSpace: 'pre'
+									},
+
+									// Use Input CSS?
+									self.css([
+										'font-size',
+										'font-family',
+										'font-weight',
+										'font-style',
+										'font-variant',
+										'word-spacing',
+										'letter-spacing',
+										'text-indent',
+										'text-rendering',
+										'text-transform'
+									])
+								))
+								.text(useText)
+								.appendTo(container),
+				width	=	shadow.width();
+
+			// Remove Shadow
+			shadow.remove();
+
+
+			// Add Padding if it has "list"
 
 
 
-					// Set Width
-					// Add 1px for Caret
-					self.width( width + (padding[self.attr("type")] || 0) + 1 + (self.attr("list") !== undefined ? 20 : 0) );
+			// Set Width
+			// Add 1px for Caret
+			self.width( width + (padding[self.attr("type")] || 0) + 1 + (self.attr("list") !== undefined ? 20 : 0) );
 
-					// Autocomplete
-					autocomplete.input();
-				})
-				;
+		}
+
+	}, "input");
+
 
 	this.name
-
-	.on("focus", function(){
-		console.log("Open autoComplete");
-		// autocomplete.lis(datalist['names']).show();
-
-
+	.on("focus", function(e){
+		autoComplete.targetInput(e.target).setLis( datalists.names ).show( $(this).offset() );
 	})
 	.on("blur", function(){
-
 
 		var name = self.name.val();
 
