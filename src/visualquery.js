@@ -5,35 +5,107 @@ $.fn.visualquery = function(options){
 	'use strict';
 
 	// Validate Options
-	options		=	$.extend({
-						strict: false,
-						parameters: [],
-						defaultQuery: [],
-						callback: $.noop(),
-					}, options);
+	options	 =	$.extend({
+					strict: false,
+					parameters: [],
+					defaultQuery: [],
+					placeholder: "",
+					callback: $.noop(),
+				}, options);
 
 	var
 
+	// Callback
+	callback =	function(){
+					options.callback( collection.list.map(function(e){
+						return e.validate() && {
+							name: e.name.val(),
+							operator: (datalists[e.name.val()+"_operators"] && datalists[e.name.val()+"_operators"][e.operator.val()]) || e.operator.val(),
+							value: (datalists[e.name.val()+"_values"] && datalists[e.name.val()+"_values"][e.value.val()]) || e.value.val()
+						};
+					}).filter(function(e){ return e; }) );
+				},
+
+	// Placeholder Text
+	placeholder = $("<div></div>", { "class": "placeholder", "style": "pointer-events: none;"+(options.defaultQuery.length ? "display:none":""), "text": options.placeholder }),
+
 	// Div Container For Parameters
-	container	= $("<div>", { "class": "parameters" }),
+	container =	$("<div>", { "class": "parameters", "html": placeholder })
+						.on({
+							// Toggle Class - Focus
+							"focusin": function(){
+								container.addClass("selected");
+							},
+
+							// Toggle Class - Blur
+							"focusout": function(){
+								container.removeClass("selected");
+							},
+
+							// Click to Create a New Parameter
+							"mousedown": function(e){
+
+								// Ignore Event Bubbling
+								if( !$(e.target).is(container) ){ return; }
+
+								// Prevent so the Input Focuses
+								e.preventDefault();
+
+								// Unselect Selected Prameters
+								$("div.parameter.selected", container).removeClass("selected");
+
+								// Determine insert location
+								var after;
+								$("div.parameter", container).each(function(){
+
+									var $this = $(this),
+										position = $this.offset();
+
+									if(
+										// Stop Iterating if Row is below
+										position.top > e.pageY ||
+
+										// If on row but passed it
+										(position.top < e.pageY && e.pageY< position.top+$this.height() && position.left>e.pageX)
+									){
+										return false;
+									}
+
+									after = $this;
+								}); 
+
+								// Create Parameter
+								var parameter = new Parameter();
+								parameter.$[(after !== undefined) ? 'insertAfter' : 'prependTo'](after || this);
+								parameter.name.focus();
+
+								// Update Collection
+								collection.update();
+							}
+						}),
+
+	// Collection of Parameters
+	collection =	{
+						list: [],
+						update: function(){
+							var self = this, children = container.children("div.parameter");
+							this.list = [];
+
+							// Toggle Placeholder
+							placeholder[ children.length ? "hide" : "show" ]();
+
+							children.each(function(){
+								self.list.push( $(this).data("Parameter") );
+							});
+
+							return this;
+						}
+					},
 
 	// Defined Parameters
 	parameters	= {},
 
-	// Current Query
-	query		= [],
-
-	// Callback
-	callback =	function(){
-					var json = [];
-					query.forEach(function(e){
-						var obj = e.toObj();
-						if(obj){ json.push(obj); }
-						return e.toObj();
-					});
-					options.callback(json);
-				},
-
+	// Datalist for Autocomplete
 	datalists = {
 		names: []
 	};
@@ -52,10 +124,15 @@ $.fn.visualquery = function(options){
 		datalists[parameter.name+"_values"] = parameter.values && parameter.values;
 	});
 
+	// Autocomplete
+	import "visualquery.autoComplete.js";
+	
+	// Parameters
+	import "visualquery.parameters.js";
 
-import "visualquery.autoComplete.js";
-import "visualquery.parameters.js";
 
+	// Render Visual Query
+	this.html([container, autoComplete.$]);
 
 	// Render Default Query Set in Options
 	options.defaultQuery.forEach(function(parameter){
@@ -66,81 +143,14 @@ import "visualquery.parameters.js";
 		// Put it in Query
 		parameter = new Parameter(parameter.name, parameter.operator, parameter.value, parameter.type );
 		parameter.$.appendTo(container);
+
+		parameter.name.trigger("blur").trigger("adjustWidth");
+		parameter.operator.trigger("adjustWidth");
+		parameter.value.trigger("adjustWidth");
+
+		// Update Collection
+		collection.update();
 	});
 
-
-
-	// //
-	// $(document).on("click", function(e){
-	// 	var target = $(e.target);
-
-	// 	// If it's the container or inside the container
-	// 	if( target.is(container) || container.has(target).length!==0 ){
-	// 		container.addClass("selected");
-	// 	}else{
-	// 		// Remove Select from Visual Query
-	// 		container.removeClass("selected");
-
-	// 		// Unselect Selected Prameters
-	// 		$("div.parameter.selected", container).removeClass("selected");
-	// 	}
-	// });
-
-
-
-	container
-
-	// Focus
-	.on("focusin", function(){
-		container.addClass("selected");
-	})
-	.on("blur", "input", function(){
-		container.removeClass("selected");
-	})
-	
-
-	// Click to Create a New Parameter
-	.on("mousedown", function(e){
-
-		// Ignore Event Bubbling
-		if( !$(e.target).is(container) ){ return; }
-
-		// Prevent so the Input Focuses
-		e.preventDefault();
-
-		// Unselect Selected Prameters
-		$("div.parameter.selected", container).removeClass("selected");
-
-		// Determine insert location
-		var after;
-		$("div.parameter", container).each(function(){
-
-			var $this = $(this),
-				position = $this.offset();
-
-			if(
-				// Stop Iterating if Row is below
-				position.top > e.pageY ||
-
-				// If on row but passed it
-				(position.top < e.pageY && e.pageY< position.top+$this.height() && position.left>e.pageX)
-			){
-				return false;
-			}
-
-			after = $this;
-		}); 
-
-		// Create Parameter
-		var parameter = new Parameter();
-		parameter.$[(after !== undefined) ? 'insertAfter' : 'prependTo'](after || this);
-		parameter.name.focus();
-
-	})
-
-	;
-
-	// Render Visual Query
-	this.html([container, autoComplete.$]);
-
+	callback();
 };

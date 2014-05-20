@@ -8,85 +8,84 @@
 		<script>
 		$(function(){
 			$("div#anydiv1").visualquery({
-				strict: false,	//Limit inputs where parameters are defined,
+				strict: true,	//Limit inputs where parameters are defined,
 
-				//	Supports HTML5 Most Chrome-supported Inputs:
-				//		text, search, email, password, number, date, time, url, datetime-local, week
+				//	Supported Input Types:
+				//		text, email, number, url
 				parameters: [
+
 					{
-						name: "gender",
+						name: "Country",
 						operators: {
 							"is": "=",
 							"is not": "!="
 						},
-						values: ["Male", "Female"],
+						values: ["Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas, The","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo, Democratic Republic of the","Congo, Republic of the","Costa Rica","Cote d'Ivoire","Croatia","Cuba","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Ethiopia","Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Korea, North","Korea, South","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macedonia","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia, Federated States of","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar (Burma)","Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","Norway","Oman","Pakistan","Palau","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Swaziland","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Western Sahara","Yemen","Zambia","Zimbabwe"]
 					},
+
 					{
-						name: "email",
+						name: "Continent",
 						operators: {
 							"is": "=",
 							"is not": "!="
 						},
-						type: "email"
+						values: ["Asia", "Africa", "North America", "South America", "Antarctica", "Europe", "Australia"]
 					},
+
 					{
-						name: "height",
+						name: "Population",
 						operators: {
 							"is": "=",
-							"greater than": "<",
-							"smaller than": ">"
+							"is greater than": "<",
+							"is less than": ">"
 						},
 						type: "number",
-						operatorAttrs: { "placeholder": "is" },
-						valueAttrs: { "placeholder": "In Meters!", "min": 1, "max": 2.5 }
+						valueAttrs: { "placeholder": "In millions", "min": 1, "max": 3 }
 					},
+
 					{
-						name: "color",
-						operators: {
-							"is": "="
-						},
-						type: "color",
-						operatorAttrs: { "value": "is" },
-						valueAttrs: { "value": "cccccc" }
-					},
-					{
-						name: "time",
+						name: "Area",
 						operators: {
 							"is": "=",
-							"greater than": "<",
-							"smaller than": ">"
+							"is bigger than than": "<",
+							"is smaller than": ">"
 						},
-						type: "time"
+						type: "number",
+						valueAttrs: { "placeholder": "In sq mi", "min": 100, "max": 1000000 }
 					},
-					{
-						name: "heights",
-						operators: {
-							"is": "=",
-							"greater than": "<",
-							"smaller than": ">"
-						},
-						type: "range",
-						operatorAttrs: { "placeholder": "is" },
-						valueAttrs: { "min": 1, "max": 10 }
-					},
-					{
-						name: "birthday",
-						operators: {
-							"is": "=",
-							"greater than": "<",
-							"smaller than": ">"
-						},
-						type: "date"
-					},
+
 				],
 				defaultQuery: [
+					{
+						name: "Population",
+						operator: "is greater than",
+						value: "2"
+					},
+					{
+						name: "Area",
+						operator: "is",
+						value: "2300"
+					},
+					{
+						name: "Continent",
+						operator: "is",
+						value: "Europe"
+					}
 				],
+				placeholder: "Look up countries...",
 				callback: function(searched){
-					console.log(searched);
 
-					$("#mysql1").text("SELECT * FROM `people` WHERE " + searched.map(function(e){
+					$("#mysql1 div").text("SELECT * FROM `table` WHERE " + (searched.map(function(e){
 						return "`" + e.name + "` " + e.operator + " '" + e.value + "'";
-					}).join(" AND "));
+					}).join(" AND ") || "...") );
+
+					var operators = { "=": "eq", "!=": "ne", "<": "gt", ">": "lt" }, mongodb = {};
+					searched.forEach(function(e){
+						mongodb[e.name] = {};
+						mongodb[e.name]["$"+operators[e.operator]] = e.value;
+					});
+
+					$("#mongodb1 div").text("db.collection.find("+JSON.stringify(mongodb)+");");
 				}
 			});
 		});
@@ -95,10 +94,14 @@
 
 		<style type="text/less">
 
+*{
+	font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+	margin: 0; padding: 0;
+}
+
 
 /* Visual Query Container (Parameters + AutoComplete) */
 div#anydiv1{
-	margin: 10px;
 	position: relative;
 
 	*{
@@ -107,17 +110,14 @@ div#anydiv1{
 
 	/* AutoComplete */
 	ul{
-		/*
-		Default:
-		display: none;
-		position: absolute;
-		*/
 
 		z-index: 1000;
 		min-width: 100px;
+		max-height: 200px;
+		overflow: scroll;
 		padding: 2px 0;
 		margin: 2px 0 0;
-		font-size: 14px;
+		font-size: 0.9em;
 		list-style: none;
 		background-color: #fff;
 		border: 1px solid rgba(0,0,0,0.15);
@@ -136,15 +136,13 @@ div#anydiv1{
 			line-height: 1.428571429;
 			color: #333;
 			white-space: nowrap;
-			&:hover{
-				background-color: #eee;
-			}
-		}
 
-		li.selected{
-			color: #262626;
-			background-color: #eee;
-			text-decoration: none;
+			/* Selected */
+			&.selected{
+				color: #262626;
+				background-color: #eee;
+				text-decoration: none;
+			}
 		}
 	}
 
@@ -152,6 +150,7 @@ div#anydiv1{
 
 	/* Parameters Container */
 	div.parameters{
+
 
 		cursor: text;
 
@@ -170,6 +169,7 @@ div#anydiv1{
 
 		overflow: scroll;
 
+		/* Transition For Highlight Glow */
 		-webkit-transition: all 0.1s linear;
 		-o-transition: all 0.1s linear;
 		-moz-transition: all 0.1s linear;
@@ -177,11 +177,25 @@ div#anydiv1{
 		-kthtml-transition: all 0.1s linear;
 		transition: all 0.1s linear;
 
-
+		/* When a Parameter is Selected, Highlight Container */
 		&.selected{
 			outline: none;
 			border-color: #9ecaed;
 			box-shadow: inset 0 0 5px #bce8f1;
+		}
+
+		/* Placeholder */
+		div.placeholder{
+
+			color: #ccc;
+
+			/* Center Vertically */
+			position: absolute;
+			top: 50%;
+			-webkit-transform: translateY(-50%);
+			-webkit-transform-style: preserve-3d;
+			margin: 0 8px;
+
 		}
 
 		/* Each Parameter */
@@ -213,7 +227,7 @@ div#anydiv1{
 			}
 
 			/* Selected */
-	/*		&.selected{
+			&.selected{
 				background-color: #d9edf7;
 				border: 1px solid #bce8f1;
 
@@ -221,11 +235,11 @@ div#anydiv1{
 					color: #3a87ad;
 					cursor: text;
 				}
-			}*/
+			}
 
 
 			/* Error */
-			div#anydiv1 div.parameters div.parameter.error{
+			&.error{
 				color: #a94442;
 				background-color: #f2dede;
 				box-shadow: inset 0 0 0 1px #ebccd1;
@@ -235,12 +249,12 @@ div#anydiv1{
 			}
 
 			/* Remove Button */
-			span.remove{
-				margin: 0 6px 0 0px;
+			span#remove{
+				margin-right: 4px;
 
 				/* Hover */
 				&:hover{
-					font-weight: bold;
+					font-weight: 500;
 				}
 			}
 
@@ -251,7 +265,7 @@ div#anydiv1{
 				color: inherit;
 				background: transparent;
 
-				font-size: 14px;
+				font-size: 0.9em;
 				font-weight: 200;
 
 				height: 100%;
@@ -270,7 +284,7 @@ div#anydiv1{
 			/* Parameter Input Name */
 			#name{
 				font-weight: 600;
-				font-size: 12px;
+				font-size: 0.8em;
 				text-transform: uppercase;
 				padding-bottom: 1px;
 				box-sizing: border-box;
@@ -283,53 +297,84 @@ div#anydiv1{
 				text-transform: none;
 			}
 		}
+	}
+}
 
 
 
+div.contain{
+	width: 600px;
+	margin: 0 auto;
+}
+div#demo{
+	margin-top: 100px;
+}
+h1{
+	margin: 20px 10px;
+	font-weight: 100;
+	color: #555;
+}
+div#results{
+
+	margin-top: 100px;
+	background-color: #515b5e;
+
+
+	box-sizing: border-box;
+
+	padding: 30px 0 60px;
+
+	h1{
+		color: #efefef;
 	}
 
+	fieldset.query{
+		width: 586px;
+		margin: 12px auto;
+		padding: 10px;
+		border: 1px solid #aaa;
+		border-radius: 3px;
+		
+		legend{
+			color: #e4e4e4;
+			font-size: 1em;
+			font-weight: 200;
+		}
 
+		div{
+			color: #1a1a1a;
+			font-size: 0.9em;
+			font-family: Courier;
+			line-height: 1.6em;
+			white-space: pre-wrap;
+		}
 
-
+	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-	
-
-
-
-
-
-
-
-
-div#mysql1{
-	width: 612px;
-	margin: 0 auto;
-	font-size: 11px;
-	white-space: pre-wrap;
-	font-family: Courier;
-	line-height: 1.6em;
-}
-
 		</style>
-			<script src="less-1.4.1.min.js" type="text/javascript"></script>
-
+		<script src="less-1.4.1.min.js" type="text/javascript"></script>
 	</head>
 	<body>
-		<div id="anydiv1">ssdfs</div>
-		<div id="mysql1"></div>
-		<div id="mongo1"></div>
+		<div id="demo" class="contain">
+			<h1>Visual Query <small>v0.1</small></h1>
+			<div id="anydiv1"></div>
+		</div>
+
+		<div id="results">
+			<div class="contain">
+				<h1>Live Results</h1>
+
+				<fieldset class="query" id="mysql1">
+					<legend>MySQL</legend>
+					<div></div>
+				</fieldset>
+
+				<fieldset class="query" id="mongodb1">
+					<legend>MongoDB</legend>
+					<div></div>
+				</fieldset>
+			</div>
+		</div>
 
 		<div id="anydiv2"></div>
 	</body>

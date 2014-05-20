@@ -1,15 +1,33 @@
 $.fn.focus = function( data, fn ){
-	'use strict';
+
+
+	// 2 Arguments - Selection
+
+	// 1 Argument
+	// 	If function -- Bind callback
+	//	If Numeric -- Caret Position
+
+	// 0 Arguments - Trigger
+
+
+	'use strict';	
 	if( !this[0] ){ return; }
 
 	// Set Selection
 	if( arguments.length>=1 && Array.prototype.every.call(arguments, function(e){
-		return Math.floor(e) === e && $.isNumeric(e);
+		return Math.floor(e) === e;
 	}) ){
 
+
 		if ( this[0].setSelectionRange ){
-			return this[0].setSelectionRange(data, fn || data);
-		} else if (this[0].createTextRange ){
+
+			// Beacause of Chrome removing Select API on inputs
+			try { return this[0].setSelectionRange(data, fn || data); }
+			catch(e) { return this.trigger("focus"); }
+		}
+
+		// Internet Explorer
+		else if (this[0].createTextRange ){
 			var range = this[0].createTextRange();
 			range.collapse(true);
 			range.moveEnd('character', fn || data);
@@ -17,10 +35,13 @@ $.fn.focus = function( data, fn ){
 			range.select();
 		}
 	
-	} else
-	if( arguments.length === 2 ){
+	}
+
+	// Bind Event
+	else if( arguments.length === 2 ){
 		return this.on( "focus", null, data, fn );
 	}
 
+	// Trigger Event
 	return this.trigger("focus");
 };

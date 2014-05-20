@@ -3,12 +3,23 @@ module.exports = function(grunt) {
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 
-		smash: {
+		// import: {
+		// 	'src/<%= pkg.name %>.smashed.js': ['src/visualquery.js']
+		// },
+
+		import: {
 			bundle: {
 				src: 'src/visualquery.js',
 				dest: 'src/<%= pkg.name %>.smashed.js'
 			},
 		},
+
+		// smash: {
+		// 	bundle: {
+		// 		src: 'src/visualquery.js',
+		// 		dest: 'src/<%= pkg.name %>.smashed.js'
+		// 	},
+		// },
 
 
 		jshint: {
@@ -19,6 +30,10 @@ module.exports = function(grunt) {
 				'eqnull': true,
 				'camelcase': true,
 				'undef': true,
+				'unused': 'strict',
+
+				// Allow variable shadowing for 'self'?
+				'shadow': true,
 
 				globals: {
 					jQuery: true
@@ -118,13 +133,14 @@ module.exports = function(grunt) {
 
 
 	grunt.loadNpmTasks('grunt-contrib-jshint');
-	grunt.loadNpmTasks('grunt-smash');
-	grunt.loadNpmTasks('grunt-contrib-concat');
+	grunt.loadNpmTasks('grunt-importjs');
+	// grunt.loadNpmTasks('grunt-smash');
+	// grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-closure-compiler');
 	grunt.loadNpmTasks('grunt-contrib-watch');
 
-	grunt.registerTask('default', ['smash', 'jshint', 'uglify', 'closure-compiler', 'watch']);
-	grunt.registerTask('development', ['smash', 'jshint:development', 'uglify']);
+	grunt.registerTask('default', ['import', 'jshint', 'uglify', 'closure-compiler', 'watch']);
+	grunt.registerTask('development', ['import', 'jshint:development', 'uglify']);
 
 };

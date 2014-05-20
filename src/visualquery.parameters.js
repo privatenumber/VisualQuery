@@ -1,73 +1,263 @@
+// Caret Methods for Parameter
+var
+caretLeft = function(el){
+				try{
+					return el.selectionStart === 0 && el.selectionEnd === 0;
+				}catch(e){
+					return false;
+				}
+			},
+caretRight = function($, el){
+				try{
+					return ( $.val().length === el.selectionStart && $.val().length === el.selectionEnd );
+				}catch(e){
+					return false;
+				}
+			};
+
 // Create Parameter Class
 var Parameter = function(name, operator, value){
 	var self = this;
 
+	// Remove Parameter
+	this.remove = function(){
+
+		// Remove Parameter
+		self.$.remove();
+
+		// Update Collection
+		collection.update();
+
+		// Invoke Callback
+		callback();
+	};
+
+	// Validation
+	this.validate = function(){
+
+		// Values
+		var name = self.name.val(), operator = self.operator.val(), value = self.value.val();
+
+		// If All Empty
+		if( !(name+operator+value).length ){
+			return self.remove() && false;
+		}
+
+		// If Any of them is Empty
+		if(
+			!name.length		||
+			!operator.length	||
+			!value.length
+		){
+			self.$.addClass("error");
+			return false;
+		}
+
+		// Invalid name && Strict => Error
+		if( options.strict && !parameters.hasOwnProperty(name) ){
+			return self.$.addClass("error").attr("title", "Invalid Parameter") && false;
+		}
+
+		// Input Type Constraint
+		if( !self.value[0].checkValidity() ){
+			return self.$.addClass("error").attr("title", self.value[0].validationMessage) && false;
+		}
+
+		// Valid
+		return true;
+	};
+
 	// Create DOM
 	this.$ =	$("<div>", { "class":"parameter" })
+
+				.data("Parameter", this)
 
 				.append(
 
 					// Delete Button
-					$('<span></span>', { "id": "remove", "html": "&times;" }).on("click", function(){
-						self.$.remove();
-					}),
+					$('<span></span>', { "id": "remove", "html": "&times;" }).on("click", self.remove),
 					
 					// Name Input
-					( this.name = $('<input>', { "type": "text", "spellcheck": "false", "autoComplete": "off", "id": "name", "value": name, "style": "width:1px;", "list": "names" }) ),
+					( this.name =	$('<input>', { "type": "text", "spellcheck": "false", "autoComplete": "off", "id": "name", "value": name, "style": "width:1px;" })
+										.on({
+												"focus": function(){
+
+													// Render Autocomplete
+													autoComplete
+														.setLis( datalists.names )
+														.show( $(this).offset() );
+												},
+
+												"blur": function(){
+
+													var name = self.name.val(),
+														settings = parameters[name] || {};
+
+													// Change Operator Attributes
+													self.operator.attr( jQuery.extend(
+														// Default
+														{ "placeholder": "" },
+
+														// User Preferences
+														settings.operatorAttrs || {},
+
+														// Immutable Attributes
+														{
+															"type": "text"
+														})
+													).trigger("input");
+													
+
+													// Change Value Attributes
+													self.value.attr( jQuery.extend(
+														// Default
+														{ "placeholder": "" },
+
+														// User Preferences
+														settings.valueAttrs || {},
+
+														// Immutable Attributes
+														{
+															"type":
+																// Allowed Types
+																( ["text", "email", "number", "url"].indexOf(settings.type) !==-1 && settings.type ) ||
+
+																// Fallback Type
+																"text"
+														}
+													) ).trigger("input");
+												}
+											})
+					),
 
 					// Operator Input
-					( this.operator = $('<input>', { "type": "text", "spellcheck": "false", "autoComplete": "off", "id": "operator", "value": operator, "style": "width:1px;" }) ),
+					( this.operator =	$('<input>', { "type": "text", "spellcheck": "false", "autoComplete": "off", "id": "operator", "value": operator, "style": "width:1px;" })
+											.on("focus", function(){
+												// Render Autocomplete
+												autoComplete
+													.setLis( datalists[self.name.val()+"_operators"] || [] )
+													.show( $(this).offset() );
+											})
+					),
 
 					// Value Input
-					( this.value = $('<input>', { "type": "text", "spellcheck": "false", "autoComplete": "off", "id": "value", "value": value, "style": "width:10px;" }) )
-
+					( this.value =	$('<input>', { "type": "text", "spellcheck": "false", "autoComplete": "off", "id": "value", "value": value, "style": "width:10px;" })
+										.on("focus", function(){
+											// Render Autocomplete
+											autoComplete
+												.setLis( datalists[self.name.val()+"_values"] || [] )
+												.show( $(this).offset() );
+										})
+					)
 				)
 
+	// Move to Next Input
+	.on("keydown", "input#name", function(e){
+		// Left: If the Caret is at the beginning of the input
+		if(
+			caretLeft(this) &&
 
-	/* Bind Events to Inputs*/
+			// Left - 37
+			e.keyCode === 37
+		){
+			e.preventDefault();
 
+			// Focus Previous Parameter
+			var previous = collection.list[ collection.list.indexOf(self)-1 ];
+			previous = previous && previous.value.focus();
+		}
+	})
+
+	// Move to Previous Input
+	.on("keydown", "input#value", function(e){
+		// Right: If the Caret is at the end of the input
+		if(
+			caretRight($(this), this) &&
+
+			// Right - Go to Next Input
+			e.keyCode === 39
+		){
+			e.preventDefault();
+
+			// Focus Next Parameter
+			var next = collection.list[ collection.list.indexOf(self)+1 ];
+			next = next && next.name.focus(0);
+		}
+	})
+
+	// Bind Events to Inputs
 	.on({
 
 		"keydown": function(e){
 
-			var input = $(e.target);
+			var input = $(this);
 
-			// Enter
-			if( e.keyCode === 13 ){
+			if(
+				// Right: If the Caret is at the end of the input
+				caretRight(input, this) &&
 
-				input.next().focus();
-				// //If one of the dropdown options are selected, use that
-				// var selected = autoComplete.$.find(".selected");
-				// if( selected.length === 1){
-				// 	input.val(selected.attr("value"));
-				// }
-
-				// return focusNext(input);
+				// Right - Go to Next Input
+				e.keyCode === 39
+			){
+				e.preventDefault();
+				input.next().focus(0);
 			}
+
+			// Left: If the Caret is at the beginning of the input
+			if(
+				caretLeft(this) &&
+				(
+					// Left - 37
+					e.keyCode === 37 ||
+
+					// Delete - 8
+					e.keyCode === 8
+				)
+			){
+				e.preventDefault();
+				input.prev().focus();
+			}
+
 		},
 
-		"blur": function(e){
+		"blur": function(){
+
+			// Remove Selected Class from Parameter
+			self.$.removeClass("selected");
+
+			// Validate
+			self.validate();
+
+			// Hide Auto Complete
 			autoComplete.$.hide();
+
+			// Invoke Callback
+			callback();
 		},
 
-		"input": function(e) {
+		"focus": function(){
 
+			// Add Selected Class to Parameter
+			self.$.removeClass("error").addClass("selected");
 
-			// Padding for HTML5
+			// Bind AutoComplete
+			autoComplete.targetInput(this);
+		},
+
+		"input adjustWidth": function(){
+
+			// Dynamic Input Width 
+
+			// Padding for HTML5 Types
 			var padding = {
-				"number" : 17,
-				"date": 57
+				"number" : 17
 			};
 
-			var self = $(this),
-				value = self.val(),
-				useText = ( value.length !== 0 ? value : ( self.attr("placeholder") || "" ) );
+			var $this = $(this),
+				value = $this.val(),
 
-			console.log(value, value.length, self.attr("type"));
-
-
-			// If No Length
-			//if( useText.length === 0 ){ return self.width( (padding[self.attr("type")] || 0) + 1 + (self.attr("list") !== undefined ? 20 : 0) ); }
+				// Use Placeholder if there's no text
+				useText = ( value.length !== 0 ? value : ( $this.attr("placeholder") || "" ) );
 
 			// Render Shadow to Get Width
 			var shadow	=	$("<span>", { "class": options['class'] })
@@ -82,7 +272,7 @@ var Parameter = function(name, operator, value){
 									},
 
 									// Use Input CSS?
-									self.css([
+									$this.css([
 										'font-size',
 										'font-family',
 										'font-weight',
@@ -102,79 +292,19 @@ var Parameter = function(name, operator, value){
 			// Remove Shadow
 			shadow.remove();
 
-
-			// Add Padding if it has "list"
-
-
-
 			// Set Width
-			// Add 1px for Caret
-			self.width( width + (padding[self.attr("type")] || 0) + 1 + (self.attr("list") !== undefined ? 20 : 0) );
+			$this.width(
+
+				// Width of Shadow + Fallback Width for Empty Inputs
+				(width || 10 ) +
+
+				// Width of Caret
+				1 +
+
+				// HTML5 Type Padding
+				(padding[$this.attr("type")] || 0)
+			);
 
 		}
-
 	}, "input");
-
-
-	this.name
-	.on("focus", function(e){
-		autoComplete.targetInput(e.target).setLis( datalists.names ).show( $(this).offset() );
-	})
-	.on("blur", function(){
-
-		var name = self.name.val();
-
-		var settings = parameters[name] || {};
-
-		// Change Operator Attributes
-		self.operator.attr( jQuery.extend(
-			// Default
-			{ "placeholder": "" },
-
-			// User Preferences
-			settings.operatorAttrs || {},
-
-			//	Locked
-			//		Note - Make Class mandatory..?
-			{
-				"type": "text",
-				"list": name
-			})
-		).trigger("input");
-		
-
-		// Change Value Attributes
-		self.value.attr( jQuery.extend(
-			// Default - Gets Resetted if Settings Doesn't Exist
-			{ "type": "text", "placeholder": "" },
-
-			// User Preferences
-			settings.valueAttrs || {},
-
-			// Locked
-			{
-				"type": settings.type || ( settings.valueAttrs && settings.valueAttrs.type) || "text",
-				"list": name+"_values"
-			}
-		) ).trigger("input");
-
-		// Change Input Widths
-
-		// Not valid name && Strict => Error
-		if( options.strict && !parameters.hasOwnProperty(name) ){ return "Error"; }
-
-	});
-
-
-	// Enforce Type Constaint Validation
-	this.value.on("blur", function(){
-		//console.log( self.value[0].willValidate, self.value[0].validity, self.value[0].validationMessage, self.value[0].setCustomValidity() );
-		if( !self.value[0].checkValidity() ){
-			self.$.addClass("error");
-		}else{
-			self.$.removeClass("error");
-		}
-	})
-	;
-
 };

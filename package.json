@@ -11,7 +11,8 @@
     "grunt-contrib-jshint": "^0.10.0",
     "grunt-closure-compiler": "0.0.21",
     "grunt-smash": "^0.1.0",
-    "grunt-contrib-watch": "^0.6.1"
+    "grunt-contrib-watch": "^0.6.1",
+    "grunt-importjs": "^0.1.1"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
