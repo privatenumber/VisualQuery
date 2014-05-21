@@ -38,10 +38,10 @@ var autoComplete = (function(){
 		// Render the Lis so it matches the Input Value
 		renderLis = function(){
 
-			var index = el.children(".selected"),
-				select = index.index() !== -1 ? index : 0,
+			console.log(el.children());
+			var index = el.children(".selected").index(),
+				select = index !== -1 ? index : 0,
 				list =	datalist.map(function(li, idx){
-
 							// If Typed Doesn't match, Don't show
 							if( !li.match(new RegExp(input.val(), "i")) ){ return; }
 
@@ -49,7 +49,7 @@ var autoComplete = (function(){
 								"text": li,
 
 								//Automatically Select First one
-								"class": ( select === idx ?  (input.attr("placeholder", li).trigger("adjustWidth") && "selected") : "" )
+								"class": ( select === idx ? (input.attr("placeholder", li).trigger("adjustWidth") && "selected") : "" )
 							}).attr("value", li);
 						}).filter(function(elem){ return elem; });
 

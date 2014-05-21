@@ -141,6 +141,6 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-watch');
 
 	grunt.registerTask('default', ['import', 'jshint', 'uglify', 'closure-compiler', 'watch']);
-	grunt.registerTask('development', ['import', 'jshint:development', 'uglify']);
+	grunt.registerTask('development', ['import', 'jshint:development', 'closure-compiler']);
 
 };

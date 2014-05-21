@@ -112,6 +112,7 @@
                 e.preventDefault();
                 input.removeAttr("placeholder").val($(this).attr("value")).trigger("input").blur().next().focus();
             }), renderLis = function() {
+                console.log(el);
                 var index = el.children(".selected"), select = index.index() !== -1 ? index : 0, list = datalist.map(function(li, idx) {
                     if (!li.match(new RegExp(input.val(), "i"))) {
                         return;
