@@ -76,7 +76,7 @@
 				placeholder: "Look up countries...",
 				callback: function(searched){
 
-					$("#mysql1 div").text("SELECT * FROM `table` WHERE " + (searched.map(function(e){
+					$("#sql1 div").text("SELECT * FROM `table` WHERE " + (searched.map(function(e){
 						return "`" + e.name + "` " + e.operator + " '" + e.value + "'";
 					}).join(" AND ") || "...") );
 
@@ -315,8 +315,8 @@
 			<div class="contain">
 				<h1>Live Results</h1>
 
-				<fieldset class="query" id="mysql1">
-					<legend>MySQL</legend>
+				<fieldset class="query" id="sql1">
+					<legend>SQL</legend>
 					<div></div>
 				</fieldset>
 
