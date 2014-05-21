@@ -1,4 +1,4 @@
-/*! VisualQuery 2014-05-20 */
+/*! VisualQuery 2014-05-21 */
 (function($) {
     $.fn.focus = function(data, fn) {
         "use strict";
