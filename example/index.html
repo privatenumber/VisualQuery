@@ -80,7 +80,7 @@
 						return "`" + e.name + "` " + e.operator + " '" + e.value + "'";
 					}).join(" AND ") || "...") );
 
-					var operators = { "=": "eq", "!=": "ne", "<": "gt", ">": "lt" }, mongodb = {};
+					var operators = { "=": "eq", "!=": "ne", ">": "gt", "<": "lt" }, mongodb = {};
 					searched.forEach(function(e){
 						mongodb[e.name] = {};
 						mongodb[e.name]["$"+operators[e.operator]] = e.value;
