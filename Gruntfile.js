@@ -107,7 +107,7 @@ module.exports = function(grunt) {
 			frontend: {
 				closurePath: '/Applications/closure-compiler',
 				js: 'src/<%= pkg.name %>.smashed.js',
-				jsOutputFile: 'dist/<%= pkg.name %>.closure.js',
+				jsOutputFile: 'dist/<%= pkg.name %>.min.js',
 				//maxBuffer: 500,
 				options: {
 				//	compilation_level: 'ADVANCED_OPTIMIZATIONS',
