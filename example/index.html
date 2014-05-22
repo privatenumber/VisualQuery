@@ -3,12 +3,13 @@
 	<head>
 		<meta charset="utf-8">
 		<title>VisualQuery.js jQuery Plugin Demo</title>
+		<link href="prism/prism.css" rel="stylesheet" />
 		<script src="jquery-2.0.3.min.js"></script>
 		<script src="../dist/VisualQuery.min.js"></script>
 		<script src="VisualQuery.min.js"></script>
 		<script>
 		$(function(){
-			$("div#anydiv1").visualquery({
+			$("div#anydiv").visualquery({
 				strict: true,	//Limit inputs where parameters are defined,
 
 				//	Supported Input Types:
@@ -37,8 +38,8 @@
 						name: "Population",
 						operators: {
 							"is": "=",
-							"is greater than": "<",
-							"is less than": ">"
+							"is greater than": ">",
+							"is less than": "<"
 						},
 						type: "number",
 						valueAttrs: { "placeholder": "In millions", "min": 1, "max": 3 }
@@ -48,8 +49,8 @@
 						name: "Area",
 						operators: {
 							"is": "=",
-							"is bigger than than": "<",
-							"is smaller than": ">"
+							"is bigger than than": ">",
+							"is smaller than": "<"
 						},
 						type: "number",
 						valueAttrs: { "placeholder": "In sq mi", "min": 100, "max": 1000000 }
@@ -76,7 +77,7 @@
 				placeholder: "Look up countries...",
 				callback: function(searched){
 
-					$("#sql1 div").text("SELECT * FROM `table` WHERE " + (searched.map(function(e){
+					$("#sql div").text("SELECT * FROM `table` WHERE " + (searched.map(function(e){
 						return "`" + e.name + "` " + e.operator + " '" + e.value + "'";
 					}).join(" AND ") || "...") );
 
@@ -86,7 +87,7 @@
 						mongodb[e.name]["$"+operators[e.operator]] = e.value;
 					});
 
-					$("#mongodb1 div").text("db.collection.find("+JSON.stringify(mongodb)+");");
+					$("#mongodb div").text("db.collection.find("+JSON.stringify(mongodb)+");");
 				}
 			});
 		});
@@ -101,7 +102,7 @@
 			}
 
 			/* Visual Query Container (Parameters + AutoComplete) */
-			div#anydiv1{
+			div#anydiv{
 				position: relative;
 
 				*{
@@ -307,7 +308,7 @@
 		<div id="demo">
 			<div class="contain">
 				<h1>Visual Query <small>v0.1</small> <a id="download" title="Download" href="https://github.com/hirokiosame/VisualQuery">(2.24 kb gzipped)</a></h1>
-				<div id="anydiv1"></div>
+				<div id="anydiv"></div>
 			</div>
 		</div>
 
@@ -315,21 +316,101 @@
 			<div class="contain">
 				<h1>Live Results</h1>
 
-				<fieldset class="query" id="sql1">
+				<fieldset class="query" id="sql">
 					<legend>SQL</legend>
 					<div></div>
 				</fieldset>
 
-				<fieldset class="query" id="mongodb1">
+				<fieldset class="query" id="mongodb">
 					<legend>MongoDB</legend>
 					<div></div>
 				</fieldset>
 			</div>
 		</div>
+
+		<div id="code">
+			<div class="contain">
+				<h1>Code</h1>
+				<pre id="code"><code class="language-javascript">$("div#anydiv").visualquery({
+		strict: true,
+		parameters: [
+			{
+				name: "Country",
+				operators: {
+					"is": "=",
+					"is not": "!="
+				},
+				values: ["Afghanistan","Albania","Algeria", ...]
+			},
+			{
+				name: "Continent",
+				operators: {
+					"is": "=",
+					"is not": "!="
+				},
+				values: ["Asia", "Africa", "North America", "South America", "Antarctica", "Europe", "Australia"]
+			},
+			{
+				name: "Population",
+				operators: {
+					"is": "=",
+					"is greater than": ">",
+					"is less than": "<"
+				},
+				type: "number",
+				valueAttrs: { "placeholder": "In millions", "min": 1, "max": 3 }
+			},
+			{
+				name: "Area",
+				operators: {
+					"is": "=",
+					"is bigger than than": ">",
+					"is smaller than": "<"
+				},
+				type: "number",
+				valueAttrs: { "placeholder": "In sq mi", "min": 100, "max": 1000000 }
+			}
+		],
+		defaultQuery: [
+			{
+				name: "Population",
+				operator: "is greater than",
+				value: "2"
+			},
+			{
+				name: "Area",
+				operator: "is",
+				value: "2300"
+			},
+			{
+				name: "Continent",
+				operator: "is",
+				value: "Europe"
+			}
+		],
+		placeholder: "Look up countries...",
+		callback: function(searched){
+			$("#sql div").text("SELECT * FROM `table` WHERE " + (searched.map(function(e){
+				return "`" + e.name + "` " + e.operator + " '" + e.value + "'";
+			}).join(" AND ") || "...") );
+
+			var operators = { "=": "eq", "!=": "ne", ">": "gt", "<": "lt" }, mongodb = {};
+			searched.forEach(function(e){
+				mongodb[e.name] = {};
+				mongodb[e.name]["$"+operators[e.operator]] = e.value;
+			});
+
+			$("#mongodb div").text("db.collection.find("+JSON.stringify(mongodb)+");");
+		}
+	});</code></pre>
+			</div>
+			<script src="prism/prism.js" data-default-language="markup"></script>
+		</div>
+
 		<div id="footer">
 			<iframe src="http://ghbtns.com/github-btn.html?user=hirokiosame&repo=VisualQuery&type=watch" allowtransparency="true" frameborder="0" scrolling="0" width="62" height="20"></iframe>
 			<iframe src="http://ghbtns.com/github-btn.html?user=hirokiosame&repo=VisualQuery&type=fork" allowtransparency="true" frameborder="0" scrolling="0" width="62" height="20"></iframe>
-			<iframe src="http://ghbtns.com/github-btn.html?user=hirokiosame&repo=VisualQuery&type=follow" allowtransparency="true" frameborder="0" scrolling="0" width="62" height="20"></iframe>
+			<iframe src="http://ghbtns.com/github-btn.html?user=hirokiosame&repo=VisualQuery&type=follow" allowtransparency="true" frameborder="0" scrolling="0" width="143" height="20"></iframe>
 		</div>
 	</body>
 </html>

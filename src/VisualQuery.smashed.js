@@ -260,7 +260,15 @@ $.fn.visualquery = function(options){
 									
 	
 									// Blur regardless of the existence of following input and Focus Next Input
-									input.blur().next().focus();
+									var next = input.blur().next();
+	
+									if( next.length){
+										next.focus();
+									}else{
+										var newParam = new Parameter();
+										newParam.$.appendTo(container);
+										newParam.name.focus();
+									}
 								}
 	
 								// Down / Up
