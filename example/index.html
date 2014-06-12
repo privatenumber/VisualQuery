@@ -83,8 +83,7 @@
 
 					var operators = { "=": "eq", "!=": "ne", ">": "gt", "<": "lt" }, mongodb = {};
 					searched.forEach(function(e){
-						mongodb[e.name] = {};
-						mongodb[e.name]["$"+operators[e.operator]] = e.value;
+						(mongodb[e.name] = {})["$"+operators[e.operator]] = e.value;
 					});
 
 					$("#mongodb div").text("db.collection.find("+JSON.stringify(mongodb)+");");
@@ -307,7 +306,7 @@
 	<body>
 		<div id="demo">
 			<div class="contain">
-				<h1>Visual Query <small>v0.1</small> <a id="download" title="Download" href="https://github.com/hirokiosame/VisualQuery">(2.24 kb gzipped)</a></h1>
+				<h1>Visual Query <small>v0.1</small> <a id="download" title="Download" href="https://github.com/hirokiosame/VisualQuery">(2.27 kb gzipped)</a></h1>
 				<div id="anydiv"></div>
 			</div>
 		</div>

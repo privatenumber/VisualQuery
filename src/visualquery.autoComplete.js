@@ -38,7 +38,6 @@ var autoComplete = (function(){
 		// Render the Lis so it matches the Input Value
 		renderLis = function(){
 
-			console.log(el.children());
 			var index = el.children(".selected").index(),
 				select = index !== -1 ? index : 0,
 				list =	datalist.map(function(li, idx){

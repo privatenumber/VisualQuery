@@ -1,4 +1,4 @@
-/*! VisualQuery 2014-05-21 */
+/*! VisualQuery 2014-06-12 */
 (function($) {
     $.fn.focus = function(data, fn) {
         "use strict";
@@ -47,8 +47,8 @@
             }));
         }, placeholder = $("<div></div>", {
             "class": "placeholder",
-            style: "pointer-events: none;" + (options.defaultQuery.length ? "display:none" : ""),
-            text: options.placeholder
+            text: options.placeholder,
+            style: "pointer-events: none; display:none;"
         }), container = $("<div>", {
             "class": "parameters",
             html: placeholder
@@ -112,8 +112,7 @@
                 e.preventDefault();
                 input.removeAttr("placeholder").val($(this).attr("value")).trigger("input").blur().next().focus();
             }), renderLis = function() {
-                console.log(el);
-                var index = el.children(".selected"), select = index.index() !== -1 ? index : 0, list = datalist.map(function(li, idx) {
+                var index = el.children(".selected").index(), select = index !== -1 ? index : 0, list = datalist.map(function(li, idx) {
                     if (!li.match(new RegExp(input.val(), "i"))) {
                         return;
                     }
@@ -140,7 +139,14 @@
                             if (e.keyCode === 13) {
                                 e.preventDefault();
                                 e = el.is(":visible") && (selected = el.children(".selected")).length === 1 && input.val(selected.attr("value")).trigger("input");
-                                input.blur().next().focus();
+                                var next = input.blur().next();
+                                if (next.length) {
+                                    next.focus();
+                                } else {
+                                    (next = new Parameter()).$.appendTo(container);
+                                    next.name.focus();
+                                    collection.update();
+                                }
                             }
                             if (el.is(":visible") && (e.keyCode === 40 || e.keyCode === 38)) {
                                 e.preventDefault();
@@ -301,7 +307,7 @@
             }, "input");
         };
         this.html([ container, autoComplete.$ ]);
-        options.defaultQuery.forEach(function(parameter) {
+        options.defaultQuery.filter(function(parameter) {
             if (options.strict && !(parameter.name in parameters)) {
                 return;
             }
@@ -311,7 +317,8 @@
             parameter.operator.trigger("adjustWidth");
             parameter.value.trigger("adjustWidth");
             collection.update();
-        });
+            return true;
+        }).length || placeholder.show();
         callback();
     };
 })(window.jQuery);

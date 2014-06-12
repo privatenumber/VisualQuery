@@ -27,7 +27,11 @@ $.fn.visualquery = function(options){
 				},
 
 	// Placeholder Text
-	placeholder = $("<div></div>", { "class": "placeholder", "style": "pointer-events: none;"+(options.defaultQuery.length ? "display:none":""), "text": options.placeholder }),
+	placeholder =	$("<div></div>", {
+						"class": "placeholder",
+						"text": options.placeholder,
+						"style": "pointer-events: none; display:none;"
+					}),
 
 	// Div Container For Parameters
 	container =	$("<div>", { "class": "parameters", "html": placeholder })
@@ -135,7 +139,7 @@ $.fn.visualquery = function(options){
 	this.html([container, autoComplete.$]);
 
 	// Render Default Query Set in Options
-	options.defaultQuery.forEach(function(parameter){
+	options.defaultQuery.filter(function(parameter){
 
 		// If Strict and Not in Parameters
 		if( options.strict && !(parameter.name in parameters) ){ return; }
@@ -150,7 +154,9 @@ $.fn.visualquery = function(options){
 
 		// Update Collection
 		collection.update();
-	});
+
+		return true;
+	}).length || placeholder.show();
 
 	callback();
 };

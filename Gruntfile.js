@@ -30,6 +30,7 @@ module.exports = function(grunt) {
 				'eqnull': true,
 				'camelcase': true,
 				'undef': true,
+				'expr': true,
 				'unused': 'strict',
 
 				// Allow variable shadowing for 'self'?
