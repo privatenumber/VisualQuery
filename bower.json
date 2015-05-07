@@ -1,0 +1,32 @@
+{
+  "name": "VisualQuery",
+  "version": "0.0.0",
+  "homepage": "https://github.com/hirokiosame/VisualQuery",
+  "authors": [
+    "Hiroki Osame <hirokio@bu.edu>"
+  ],
+  "description": "jQuery plugin that allows users to visually build queries",
+  "keywords": [
+    "visual",
+    "query",
+    "autocomplete",
+    "search"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+    "jquery": "~2.1.3"
+  },
+  "dependencies": {
+    "jquery": "~2.1.3",
+    "prism": "gh-pages",
+    "Element": "hirokiosame/Element"
+  }
+}

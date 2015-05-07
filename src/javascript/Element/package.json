@@ -1,0 +1,19 @@
+{
+  "name": "Element",
+  "version": "1.0.0",
+  "description": "Lightweight DOM manipulation library",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hirokiosame/Element.git"
+  },
+  "author": "Hiroki Osame",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hirokiosame/Element/issues"
+  },
+  "homepage": "https://github.com/hirokiosame/Element"
+}

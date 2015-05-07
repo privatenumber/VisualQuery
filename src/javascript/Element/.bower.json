@@ -1,0 +1,26 @@
+{
+  "name": "Element",
+  "main": "index.js",
+  "homepage": "https://github.com/hirokiosame/Element",
+  "authors": [
+    "Hiroki Osame <hirokio@bu.edu>"
+  ],
+  "description": "Lightweight DOM manipulation library",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "_release": "acd715f3cb",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "acd715f3cbf445fc33862957ab4605a95a7c9099"
+  },
+  "_source": "git://github.com/hirokiosame/Element.git",
+  "_target": "*",
+  "_originalSource": "hirokiosame/Element"
+}

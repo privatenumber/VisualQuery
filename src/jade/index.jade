@@ -1,0 +1,41 @@
+doctype html
+html
+	head
+		meta(charset="utf-8")
+		title VisualQuery.js
+		link(rel="stylesheet", href="demo.css")
+		link(rel="stylesheet", href="../css/VisualQuery.css")
+		link(rel="stylesheet", href="prism/themes/prism.css")
+	body
+		div#demo
+			div.contain
+				h1 VisualQuery 
+					small v0.2 
+					a#download(title="Download", href="https://github.com/hirokiosame/VisualQuery") (3.69 kb gzipped)
+				div#anydiv
+		div#results
+			div.contain
+				h1 Live Results
+				fieldset#sql.query
+					legend SQL
+					div
+				fieldset#mongodb.query
+					legend MongoDB
+					div
+		div#code
+			div.contain
+				h1 Code
+				pre
+					code.language-javascript
+
+
+		div#footer
+			iframe(src="http://ghbtns.com/github-btn.html?user=hirokiosame&repo=VisualQuery&type=watch", allowtransparency="true", frameborder="0", scrolling="0", width="62", height="20")
+			iframe(src="http://ghbtns.com/github-btn.html?user=hirokiosame&repo=VisualQuery&type=fork", allowtransparency="true", frameborder="0", scrolling="0", width="62", height="20")
+			iframe(src="http://ghbtns.com/github-btn.html?user=hirokiosame&repo=VisualQuery&type=follow", allowtransparency="true", frameborder="0", scrolling="0", width="143", height="20")
+
+		script(src="jquery/dist/jquery.min.js")
+		script(src="../VisualQuery.min.closure.js")
+		script(src="demo.js")
+		script(src="prism/prism.js", data-default-language="markup")
+		script(type="text/javascript", src="http://localhost:35730/livereload.js")
