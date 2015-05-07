@@ -1,5 +1,5 @@
 /* VisualQuery.js v0.2 | github.com/hirokiosame/VisualQuery */
-window.VisualQuery = function(selector, _options){
+module.exports = window.VisualQuery = function VisualQuery(selector, _options){
 
 	'use strict';
 
