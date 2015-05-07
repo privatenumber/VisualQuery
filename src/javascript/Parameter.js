@@ -8,7 +8,7 @@ module.exports = (function(){
 
 	var EventEmitter = require("./EventEmitter");
 
-	var E = require("./Element");
+	var E = require("Element");
 
 	// Create Parameter Class
 	function Parameter(collection, param){

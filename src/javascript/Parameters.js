@@ -5,7 +5,7 @@ module.exports = (function(){
 	// Individual Parameter
 	var Parameter = require("./Parameter");
 
-	var E = require("./Element");
+	var E = require("Element");
 
 	// Placeholder Text
 	var placeholder = E("div", { "class": "placeholder" });

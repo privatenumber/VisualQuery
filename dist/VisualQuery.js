@@ -285,7 +285,7 @@ module.exports = (function(){
 	'use strict';
 
 	var EventEmitter = require("./EventEmitter");
-	var E = require("./Element");
+	var E = require("Element");
 
 
 	var inputResize = require("./inputResize");
@@ -414,7 +414,7 @@ module.exports = (function(){
 
 	return Input;
 })();
-},{"./Element":1,"./EventEmitter":2,"./inputResize":8}],4:[function(require,module,exports){
+},{"./EventEmitter":2,"./inputResize":8,"Element":1}],4:[function(require,module,exports){
 module.exports = (function(){
 
 	'use strict';
@@ -425,7 +425,7 @@ module.exports = (function(){
 
 	var EventEmitter = require("./EventEmitter");
 
-	var E = require("./Element");
+	var E = require("Element");
 
 	// Create Parameter Class
 	function Parameter(collection, param){
@@ -632,7 +632,7 @@ module.exports = (function(){
 
 	return Parameter;
 })();
-},{"./Element":1,"./EventEmitter":2,"./Input":3,"./autoComplete":7}],5:[function(require,module,exports){
+},{"./EventEmitter":2,"./Input":3,"./autoComplete":7,"Element":1}],5:[function(require,module,exports){
 module.exports = (function(){
 
 	'use strict';
@@ -640,7 +640,7 @@ module.exports = (function(){
 	// Individual Parameter
 	var Parameter = require("./Parameter");
 
-	var E = require("./Element");
+	var E = require("Element");
 
 	// Placeholder Text
 	var placeholder = E("div", { "class": "placeholder" });
@@ -825,7 +825,7 @@ module.exports = (function(){
 
 	return API;
 })();
-},{"./Element":1,"./Parameter":4}],6:[function(require,module,exports){
+},{"./Parameter":4,"Element":1}],6:[function(require,module,exports){
 /* VisualQuery.js v0.2 | github.com/hirokiosame/VisualQuery */
 window.VisualQuery = function(selector, _options){
 
@@ -863,7 +863,7 @@ module.exports = (function(){
 	'use strict';
 
 	var EventEmitter = require("./EventEmitter");
-	var E = require("./Element");
+	var E = require("Element");
 
 	var ul = E("ul", { "class": "autoComplete" })
 				.css("position", "absolute")
@@ -1051,7 +1051,7 @@ module.exports = (function(){
 				.listenTo(el);
 	};
 })();
-},{"./Element":1,"./EventEmitter":2}],8:[function(require,module,exports){
+},{"./EventEmitter":2,"Element":1}],8:[function(require,module,exports){
 module.exports = function inputResize(){
 
 	'use strict';

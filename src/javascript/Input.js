@@ -3,7 +3,7 @@ module.exports = (function(){
 	'use strict';
 
 	var EventEmitter = require("./EventEmitter");
-	var E = require("./Element");
+	var E = require("Element");
 
 
 	var inputResize = require("./inputResize");
