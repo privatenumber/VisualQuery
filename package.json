@@ -2,7 +2,7 @@
   "name": "VisualQuery",
   "version": "0.0.0",
   "description": "jQuery plugin that allows users to visually build queries",
-  "main": "jquery-2.0.3.min.js",
+  "main": "src/javascript/VisualQuery.js",
   "dependencies": {},
   "devDependencies": {
     "grunt": "^0.4.4",
