@@ -1,26 +1,40 @@
 module.exports = function(grunt) {
+
 	'use strict';
+
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 
-		// import: {
-		// 	'src/<%= pkg.name %>.smashed.js': ['src/visualquery.js']
-		// },
-
-		import: {
-			bundle: {
-				src: 'src/visualquery.js',
-				dest: 'src/<%= pkg.name %>.smashed.js'
+		sass: {
+			options: {
+				compass: true,
+				style: "compressed"
 			},
+			code: {
+				files: {
+					'dist/css/VisualQuery.css' : 'src/css/VisualQuery.scss',
+					'dist/example/demo.css' : 'src/css/demo.scss'
+				}	
+			}
 		},
 
-		// smash: {
-		// 	bundle: {
-		// 		src: 'src/visualquery.js',
-		// 		dest: 'src/<%= pkg.name %>.smashed.js'
-		// 	},
-		// },
+		browserify: {
+			'dist/VisualQuery.js' : ['src/javascript/VisualQuery.js']
+		},
 
+		jade: {
+			debug: {
+				options: {
+					// data: {
+					// 	debug: true,
+					// 	timestamp: "<%= grunt.template.today() %>"
+					// }
+				},
+				files: {
+					"dist/example/index.html": "src/jade/index.jade"
+				}
+			}
+		},
 
 		jshint: {
 			options: {
@@ -33,12 +47,11 @@ module.exports = function(grunt) {
 				'expr': true,
 				'unused': 'strict',
 
-				// Allow variable shadowing for 'self'?
-				'shadow': true,
+				// Storing this-based functions elsewhere
+				'validthis': true,
 
-				globals: {
-					jQuery: true
-				},
+				// Allow variable shadowing for 'self'?
+				'shadow': true
 			},
 			grunt: {
 				options: {
@@ -50,68 +63,48 @@ module.exports = function(grunt) {
 					src: ['Gruntfile.js']
 				},
 			},
-			development: {
+			code: {
 				options: {
 					'browser': true,
 					'jquery': true,
-					'devel': true
-
+					'devel': true,
+					globals: {
+						module: true,
+						require: true,
+						Event: true
+					}
 				},
 				files: {
-					src: ['src/<%= pkg.name %>.smashed.js']
+					src: ['src/javascript/*']
 				}
 			}
 		},
 
-		// concat: {
-		// 	options: {
-		// 		separator: ';\n'
-		// 	},
-		// 	dist: {
-		// 		src: ['src/*.js'],
-		// 		dest: 'dist/<%= pkg.name %>.js'
-		// 	}
-		// },
-
 		uglify: {
-			options: {
-				banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n',
-				enclose: { 'window.jQuery': '$' }
-			},
+			// options: {
+			// 	banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n',
+			// 	// enclose: { 'window.jQuery': '$' }
+			// },
 
 			bundle: {
-				options: {
-					mangle: false,
-					beautify: true,
-					compress: false
-				},
-				src: 'src/<%= pkg.name %>.smashed.js',
-				dest: 'dist/<%= pkg.name %>.uglify.js'
-			},
-
-			bundlemin: {
-				options: {
-					mangle: true,
-					compress: true
-				},
-				src: 'src/<%= pkg.name %>.smashed.js',
-				dest: 'dist/<%= pkg.name %>.uglify.min.js'
+				// options: {
+				// 	mangle: true,
+				// 	// beautify: true,
+				// 	compress: true
+				// },
+				src: 'dist/VisualQuery.js',
+				dest: 'dist/VisualQuery.min.uglified.js'
 			}
-
-			// build: {
-			// 	src: 'dist/<%= pkg.name %>.js',
-			// 	dest: 'dist/<%= pkg.name %>.uglify.js'
-			// }
 		},
 
 		'closure-compiler': {
 			frontend: {
-				closurePath: '/Applications/closure-compiler',
-				js: 'src/<%= pkg.name %>.smashed.js',
-				jsOutputFile: 'dist/<%= pkg.name %>.min.js',
+				closurePath: '/usr/local/Cellar/closure-compiler/20150315/libexec',
+				js: 'dist/VisualQuery.js',
+				jsOutputFile: 'dist/VisualQuery.min.closure.js',
 				//maxBuffer: 500,
 				options: {
-				//	compilation_level: 'ADVANCED_OPTIMIZATIONS',
+					// 'compilation_level': 'ADVANCED',
 				//	language_in: 'ECMASCRIPT5_STRICT',
 					'language_in': 'ECMASCRIPT5'
 				}
@@ -126,22 +119,28 @@ module.exports = function(grunt) {
 				}
 			},
 			src: {
-				files: ['src/*'],
-				tasks: ['development'],
+				files: ['src/**/*'],
+				tasks: ['develop'],
+				options: {
+					livereload: 35730
+				}
+			},
+			options: {
+				spawn: false
 			}
 		}
 	});
 
 
+	grunt.loadNpmTasks('grunt-contrib-sass');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
-	grunt.loadNpmTasks('grunt-importjs');
-	// grunt.loadNpmTasks('grunt-smash');
-	// grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-closure-compiler');
 	grunt.loadNpmTasks('grunt-contrib-watch');
+	grunt.loadNpmTasks('grunt-contrib-jade');
+	grunt.loadNpmTasks('grunt-browserify');
 
-	grunt.registerTask('default', ['import', 'jshint', 'uglify', 'closure-compiler', 'watch']);
-	grunt.registerTask('development', ['import', 'jshint:development', 'closure-compiler']);
+	grunt.registerTask('default', ['sass', 'jshint', 'jade', 'browserify', 'uglify', 'closure-compiler']);
+	grunt.registerTask('develop', ['sass', 'jshint', 'jade', 'browserify', 'watch']);
 
 };
