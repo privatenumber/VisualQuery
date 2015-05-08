@@ -827,12 +827,29 @@ module.exports = (function(){
 })();
 },{"./Parameter":4,"Element":1}],6:[function(require,module,exports){
 /* VisualQuery.js v0.2 | github.com/hirokiosame/VisualQuery */
-window.VisualQuery = function(selector, _options){
+module.exports = function VisualQuery(selector, _options){
 
 	'use strict';
 
-	var selected = document.querySelector(selector);
-	
+	var selected;
+
+	// Check if query
+	if( typeof selector === "string" ){
+		selected = document.querySelector(selector);
+	}
+
+	// Check if DOM
+	else if(
+		(typeof HTMLElement === "object" && selector instanceof HTMLElement) ||
+		(selector instanceof Object && selector.nodeType === 1 && selector.nodeName === "string")
+	){
+		selected = selector;
+	}
+
+	// If nothing has been selected
+	if( !selected ){ throw new Error("No element is selected"); }
+
+
 
 	// Validate Options
 	var options = Object.create({
