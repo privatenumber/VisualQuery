@@ -19,7 +19,16 @@ module.exports = function(grunt) {
 		},
 
 		browserify: {
-			'dist/VisualQuery.js' : ['src/javascript/VisualQuery.js']
+			dist: {
+				files: {
+					'dist/VisualQuery.js' : ['src/javascript/VisualQuery.js']
+				},
+				options: {
+					browserifyOptions: {
+						'standalone': 'VisualQuery'
+					}
+				}
+			}
 		},
 
 		jade: {
