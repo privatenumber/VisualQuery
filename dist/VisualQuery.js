@@ -1,290 +1,9 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-module.exports = (function(){
-	'use strict';
-
-	function E(lement){
-		this._ = lement;
-	}
-
-	E.prototype.addClass = function addClass(className){
-		var split = className.split(" ");
-
-		for( var i = 0; i < split.length; i++ ){
-			if( !split[i] ){ continue; }
-			if( this._.classList ){ this._.classList.add(split[i]); }
-			else{ this._.className = split[i]; }
-		}
-		return this;
-	};
-
-	E.prototype.removeClass = function removeClass(className){
-		if( this._.classList ){ this._.classList.remove(className); }
-		else{
-			this._.className = this._.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
-		}
-		return this;
-	};
-
-	E.prototype.hide = function hide(){
-		if( this._.style.display !== "none" ){
-			this._.style.display = "none";
-		}
-		return this;
-	};
-
-	E.prototype.show = function show(){
-		if( this._.style.display !== "block" ){
-			this._.style.display = "block";
-		}
-		return this;
-	};
-
-	E.prototype.shown = function shown(){
-		return this._.style.display !== "none";
-	};
-
-	E.prototype.on = function on(eventNames, eventCallback, useCapture){
-
-		useCapture = !!useCapture;
-		eventNames = eventNames.split(" ");
-
-		for( var i = 0, len = eventNames.length; i < len; i++ ){
-			this._.addEventListener(eventNames[i], eventCallback, useCapture);
-		}
-
-		return this;
-	};
-
-	E.prototype.off = function off(eventNames, eventCallback){
-
-		eventNames = eventNames.split(" ");
-
-		for( var i = 0, len = eventNames.length; i < len; i++ ){
-			this._.removeEventListener(eventNames[i], eventCallback);
-		}
-
-		return this;
-	};
-
-	E.prototype.one = function one(eventName, eventCallback){
-		var self = this;
-		return this.on(eventName, function cb(){
-			self.off(eventName, cb);
-			eventCallback.apply(this, [].slice.apply(arguments));
-		});
-	};
-
-	E.prototype.append = function append(arr){
-
-		var args = arr instanceof Array ? arr : arguments;
-
-		for( var i = 0, len = args.length; i < len; i++ ){
-			this._.appendChild( args[i] instanceof E ? args[i]._ : args[i] );
-		}
-
-		return this;
-	};
-
-	E.prototype.replaceWith = function replaceWith(el){
-
-		el = el instanceof E ? el._ : el;
-
-		if( this._.parentNode ){
-			this._.parentNode.replaceChild(el, this._);
-		}
-
-		this._ = el;
-
-		return this;
-	};
-
-	E.prototype.text = function text(textContent, append){
-
-		var el = this.textWrap || this._;
-
-		if( arguments.length === 0 ){ return el.textContent; }
-
-		// Change text  
-		// textContent is faster than innerText
-		// but textContent isn't aware of style
-		// line breaks dont work
-
-		// Back to textContent - firefox doesn't support innertext...
-		el.textContent = (append ? el.textContent : "") + textContent;
-
-		return this;
-	};
-
-	E.prototype.html = function html(htmlContent, append){
-
-		// Change html
-		this._.innerHTML = (append ? this._.innerHTML : "") + htmlContent;
-
-		return this;
-	};
-
-
-	E.prototype.attr = function attr(name, value){
-
-		if( typeof name !== "string" ){ throw new Error("An attribute name is required"); }
-
-		if( typeof value !== "string" ){ return this._.getAttribute(name); }
-
-		this._.setAttribute(name, value);
-
-		return this;
-	};
-
-	E.prototype.remove = function remove(){
-		if( !this._.parentNode ){ return; }
-		this._.parentNode.removeChild(this._);
-
-		return this;
-	};
-
-
-	E.prototype.offset = function offset(top, left){
-
-		this._.style.top = top;
-		this._.style.left = left;
-
-		return this;
-	};
-
-	E.prototype.css = function css(name, value){
-
-		if( typeof name === "string"){
-			if( typeof value === "string" ){
-				this._.style[name] = value;
-			}else{
-				return getComputedStyle(this._)[name];
-			}
-		}
-		else if( name instanceof Object ){
-			for( var prop in name ){
-				this._.style[prop] = name[prop];
-			}
-		}
-
-		return this;
-	};
-
-	E.prototype.trigger = function trigger(eventName){
-
-		var evnt = new Event(eventName);
-
-		this._.dispatchEvent(evnt);
-
-		return this;
-	};
-
-
-	E.prototype.prev = function prev(){
-		if( this._.previousSibling ){
-			return new E(this._.previousSibling);	
-		}
-	};
-	E.prototype.next = function next(){
-		if( this._.nextSibling ){
-			return new E(this._.nextSibling);	
-		}
-	};
-
-	return function (el, opts){
-
-		// Ignore if already an instance
-		if( el instanceof E ){ return el; }
-
-		var instance = new E();
-
-		// el is a string
-		if( typeof el === "string" ){
-
-			// Create element
-			instance._ = document.createElement(el);
-
-			if( typeof opts === "object" ){
-
-				var _opts = Object.create(opts);
-
-
-				// Text container element
-				if( typeof _opts.textWrap === "string" ){
-
-					instance.textWrap = document.createElement(_opts.textWrap);
-					instance._.appendChild( instance.textWrap );
-					_opts.textWrap = null;
-				}
-
-				// Inner text
-				if( _opts.text !== undefined && opts.text !== null ){
-					instance.text(_opts.text);
-					_opts.text = null;
-				}
-
-				// Inner HTML
-				if( typeof _opts.html === "string" ){
-					instance.html(_opts.html);
-					_opts.html = null;
-				}
-
-				// Add Class
-				if( typeof _opts.class === "string" ){
-					instance.addClass(_opts.class);
-					_opts.class = null;
-				}
-
-				// Set everything else as an attribute
-				for( var at in _opts ){
-					if( _opts[at] ){
-						instance._.setAttribute(at, _opts[at]);
-					}
-				}
-			}
-		}else{
-			instance._ = el;
-		}
-
-		return instance;
-	};
-})();
-},{}],2:[function(require,module,exports){
+!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.VisualQuery=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 module.exports = (function(){
 
 	'use strict';
 
-	function EventEmitter(){
-		this._events = {};
-	}
-
-	EventEmitter.prototype.emit = function(eName){
-
-		// Return if not exist
-		if( !this._events[eName] ){ return false; }
-
-		var args = [].slice.apply(arguments, [1]);
-
-		// Trigger each
-		this._events[eName].forEach(function(cb){ cb.apply(window, args); });
-	};
-
-	EventEmitter.prototype.on = function(eName, callback){
-
-		// Add callback
-		( this._events[eName] || (this._events[eName] = []) ).push(callback);
-
-		return this;	
-	};
-
-	return EventEmitter;
-
-})();
-},{}],3:[function(require,module,exports){
-module.exports = (function(){
-
-	'use strict';
-
-	var EventEmitter = require("./EventEmitter");
+	var EventEmitter = require("EventEmitter");
 	var E = require("Element");
 
 
@@ -414,18 +133,19 @@ module.exports = (function(){
 
 	return Input;
 })();
-},{"./EventEmitter":2,"./inputResize":8,"Element":1}],4:[function(require,module,exports){
+},{"./inputResize":6,"Element":7,"EventEmitter":8}],2:[function(require,module,exports){
 module.exports = (function(){
 
 	'use strict';
+
+	var E = require("Element");
+	var EventEmitter = require("EventEmitter");
 
 	var autoComplete = require("./autoComplete");
 
 	var Input = require("./Input");
 
-	var EventEmitter = require("./EventEmitter");
 
-	var E = require("Element");
 
 	// Create Parameter Class
 	function Parameter(collection, param){
@@ -632,15 +352,16 @@ module.exports = (function(){
 
 	return Parameter;
 })();
-},{"./EventEmitter":2,"./Input":3,"./autoComplete":7,"Element":1}],5:[function(require,module,exports){
+},{"./Input":1,"./autoComplete":5,"Element":7,"EventEmitter":8}],3:[function(require,module,exports){
 module.exports = (function(){
 
 	'use strict';
 
+	var E = require("Element");
+	
 	// Individual Parameter
 	var Parameter = require("./Parameter");
 
-	var E = require("Element");
 
 	// Placeholder Text
 	var placeholder = E("div", { "class": "placeholder" });
@@ -825,7 +546,7 @@ module.exports = (function(){
 
 	return API;
 })();
-},{"./Parameter":4,"Element":1}],6:[function(require,module,exports){
+},{"./Parameter":2,"Element":7}],4:[function(require,module,exports){
 /* VisualQuery.js v0.2 | github.com/hirokiosame/VisualQuery */
 module.exports = function VisualQuery(selector, _options){
 
@@ -850,8 +571,11 @@ module.exports = function VisualQuery(selector, _options){
 	if( !selected ){ throw new Error("No element is selected"); }
 
 
+	// Collection of Parameters - Singleton
+	var Parameters = require("./Parameters");
 
-	// Validate Options
+
+	// Default Options
 	var options = Object.create({
 		strict: false,
 		schema: [],
@@ -860,13 +584,10 @@ module.exports = function VisualQuery(selector, _options){
 		callback: function(){},
 	});
 
-	for( var prop in _options ){	
+	// Overwite default
+	for( var prop in _options ){
 		options[prop] = _options[prop];
 	}
-
-
-	// Collection of Parameters - Singleton
-	var Parameters = require("./Parameters");
 
 	// Initialize
 	Parameters.init(options);
@@ -874,12 +595,13 @@ module.exports = function VisualQuery(selector, _options){
 	// Render
 	Parameters.renderTo(selected);
 };
-},{"./Parameters":5}],7:[function(require,module,exports){
+},{"./Parameters":3}],5:[function(require,module,exports){
 module.exports = (function(){
 
 	'use strict';
 
-	var EventEmitter = require("./EventEmitter");
+	var EventEmitter = require("EventEmitter");
+
 	var E = require("Element");
 
 	var ul = E("ul", { "class": "autoComplete" })
@@ -900,7 +622,7 @@ module.exports = (function(){
 
 			selected = E(li).addClass("selected");
 
-			EE.emit("hover", selected._.innerText);
+			EE.emit("hover", selected.text());
 		}
 
 		function onInput(){
@@ -939,6 +661,8 @@ module.exports = (function(){
 
 			// Down
 			if( e.keyCode === 40 ){
+
+				// If already selected, go to next
 				if( selected && selected.shown() ){
 
 					var next;
@@ -1055,11 +779,13 @@ module.exports = (function(){
 		}
 
 		options.appendTo.append(ul);
+		var rectP = options.appendTo._.getBoundingClientRect(),
+			rectC = el._.getBoundingClientRect();
 
 		ul.show()
 		.offset(
-			el._.offsetTop + el._.offsetHeight + "px",
-			el._.offsetLeft + "px"
+			(rectC.top - rectP.top) + rectC.height + document.body.scrollTop + "px",
+			(rectC.left - rectP.left) + document.body.scrollLeft + "px"
 		);
 
 
@@ -1068,7 +794,7 @@ module.exports = (function(){
 				.listenTo(el);
 	};
 })();
-},{"./EventEmitter":2,"Element":1}],8:[function(require,module,exports){
+},{"Element":7,"EventEmitter":8}],6:[function(require,module,exports){
 module.exports = function inputResize(){
 
 	'use strict';
@@ -1121,4 +847,275 @@ module.exports = function inputResize(){
 	this.parentNode.removeChild(shadow);
 	
 };
-},{}]},{},[6]);
+},{}],7:[function(require,module,exports){
+module.exports = (function(){
+	'use strict';
+
+	function E(lement){
+		this._ = lement;
+	}
+
+	E.prototype.addClass = function addClass(className){
+		var split = className.split(" ");
+
+		for( var i = 0; i < split.length; i++ ){
+			if( !split[i] ){ continue; }
+			if( this._.classList ){ this._.classList.add(split[i]); }
+			else{ this._.className = split[i]; }
+		}
+		return this;
+	};
+
+	E.prototype.removeClass = function removeClass(className){
+		if( this._.classList ){ this._.classList.remove(className); }
+		else{
+			this._.className = this._.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
+		}
+		return this;
+	};
+
+	E.prototype.hide = function hide(){
+		if( this._.style.display !== "none" ){
+			this._.style.display = "none";
+		}
+		return this;
+	};
+
+	E.prototype.show = function show(){
+		if( this._.style.display !== "block" ){
+			this._.style.display = "block";
+		}
+		return this;
+	};
+
+	E.prototype.shown = function shown(){
+		return this._.style.display !== "none";
+	};
+
+	E.prototype.on = function on(eventNames, eventCallback, useCapture){
+
+		useCapture = !!useCapture;
+		eventNames = eventNames.split(" ");
+
+		for( var i = 0, len = eventNames.length; i < len; i++ ){
+			this._.addEventListener(eventNames[i], eventCallback, useCapture);
+		}
+
+		return this;
+	};
+
+	E.prototype.off = function off(eventNames, eventCallback){
+
+		eventNames = eventNames.split(" ");
+
+		for( var i = 0, len = eventNames.length; i < len; i++ ){
+			this._.removeEventListener(eventNames[i], eventCallback);
+		}
+
+		return this;
+	};
+
+	E.prototype.one = function one(eventName, eventCallback){
+		var self = this;
+		return this.on(eventName, function cb(){
+			self.off(eventName, cb);
+			eventCallback.apply(this, [].slice.apply(arguments));
+		});
+	};
+
+	E.prototype.append = function append(arr){
+
+		var args = arr instanceof Array ? arr : arguments;
+
+		for( var i = 0, len = args.length; i < len; i++ ){
+			this._.appendChild( args[i] instanceof E ? args[i]._ : args[i] );
+		}
+
+		return this;
+	};
+
+	E.prototype.replaceWith = function replaceWith(el){
+
+		el = el instanceof E ? el._ : el;
+
+		if( this._.parentNode ){
+			this._.parentNode.replaceChild(el, this._);
+		}
+
+		this._ = el;
+
+		return this;
+	};
+
+	E.prototype.text = function text(textContent, append){
+
+		var el = this.textWrap || this._;
+
+		if( arguments.length === 0 ){ return el.textContent; }
+
+		// Change text  
+		// textContent is faster than innerText
+		// but textContent isn't aware of style
+		// line breaks dont work
+
+		// Back to textContent - firefox doesn't support innertext...
+		el.textContent = (append ? el.textContent : "") + textContent;
+
+		return this;
+	};
+
+	E.prototype.html = function html(htmlContent, append){
+
+		// Change html
+		this._.innerHTML = (append ? this._.innerHTML : "") + htmlContent;
+
+		return this;
+	};
+
+
+	E.prototype.attr = function attr(name, value){
+
+		if( typeof name !== "string" ){ throw new Error("An attribute name is required"); }
+
+		if( value === undefined ){ return this._.getAttribute(name); }
+
+		this._.setAttribute(name, value);
+
+		return this;
+	};
+
+	E.prototype.remove = function remove(){
+		if( !this._.parentNode ){ return; }
+		this._.parentNode.removeChild(this._);
+
+		return this;
+	};
+
+
+	E.prototype.offset = function offset(top, left){
+
+		this._.style.top = top;
+		this._.style.left = left;
+
+		return this;
+	};
+
+	E.prototype.css = function css(name, value){
+
+		if( typeof name === "string"){
+			if( typeof value === "string" ){
+				this._.style[name] = value;
+			}else{
+				return getComputedStyle(this._)[name];
+			}
+		}
+		else if( name instanceof Object ){
+			for( var prop in name ){
+				this._.style[prop] = name[prop];
+			}
+		}
+
+		return this;
+	};
+
+	E.prototype.trigger = function trigger(eventName){
+
+		var evnt = new Event(eventName);
+
+		this._.dispatchEvent(evnt);
+
+		return this;
+	};
+
+	E.prototype.prev = function prev(){
+		if( this._.previousSibling ){
+			return new E(this._.previousSibling);	
+		}
+	};
+
+	E.prototype.next = function next(){
+		if( this._.nextSibling ){
+			return new E(this._.nextSibling);	
+		}
+	};
+
+	E.prototype.data = function data(key, value){
+
+		if( !(this._data instanceof Object) ){ this._data = {}; }
+
+		if( value === undefined ){
+			return this._data[key];
+		}
+
+		this._data[key] = value;
+
+		return this;
+	};
+
+	return function (el, opts){
+
+		// Ignore if already an instance
+		if( el instanceof E ){ return el; }
+
+		var instance = new E();
+
+		// el is a string
+		if( typeof el === "string" ){
+
+			// Create element
+			instance._ = document.createElement(el);
+
+			if( typeof opts === "object" ){
+
+				var _opts = Object.create(opts);
+
+
+				// Text container element
+				if( typeof _opts.textWrap === "string" ){
+
+					instance.textWrap = document.createElement(_opts.textWrap);
+					instance._.appendChild( instance.textWrap );
+					_opts.textWrap = null;
+				}
+
+				// Inner text
+				if( _opts.text !== undefined && opts.text !== null ){
+					instance.text(_opts.text);
+					_opts.text = null;
+				}
+
+				// Inner HTML
+				if( typeof _opts.html === "string" ){
+					instance.html(_opts.html);
+					_opts.html = null;
+				}
+
+				// Add Class
+				if( typeof _opts.class === "string" ){
+					instance.addClass(_opts.class);
+					_opts.class = null;
+				}
+
+				// Set everything else as an attribute
+				for( var at in _opts ){
+					if( _opts[at] ){
+						instance._.setAttribute(at, _opts[at]);
+					}
+				}
+			}
+		}else{
+			instance._ = el;
+		}
+
+		return instance;
+	};
+})();
+},{}],8:[function(require,module,exports){
+(function (global){
+(function(g){"object"===typeof exports&&"undefined"!==typeof module?module.exports=g():"function"===typeof define&&define.amd?define([],g):("undefined"!==typeof window?window:"undefined"!==typeof global?global:"undefined"!==typeof self?self:this).EventEmitter=g()})(function(){return function h(d,f,a){function e(b,l){if(!f[b]){if(!d[b]){var c="function"==typeof require&&require;if(!l&&c)return c(b,!0);if(k)return k(b,!0);c=Error("Cannot find module '"+b+"'");throw c.code="MODULE_NOT_FOUND",c;}c=f[b]=
+{exports:{}};d[b][0].call(c.exports,function(c){var a=d[b][1][c];return e(a?a:c)},c,c.exports,h,d,f,a)}return f[b].exports}for(var k="function"==typeof require&&require,b=0;b<a.length;b++)e(a[b]);return e}({1:[function(h,d,f){d.exports=function(){function a(){this._events={}}a.prototype.on=function(e,a){this._events instanceof Object||(this._events={});this._events[e]instanceof Array||(this._events[e]=[]);this._events[e].push(a);return this};a.prototype.off=function(a,d){this._events instanceof Object||
+(this._events={});if(!(this._events[a]instanceof Array))return!1;var b=this._events[a];b.splice(b.indexOf(d),1);return this};a.prototype.emit=function(a){this._events instanceof Object||(this._events={});if(!(this._events[a]instanceof Array))return!1;var d=[].slice.apply(arguments,[1]);this._events[a].forEach(function(a){a instanceof Function&&a.apply(null,d)})};return a}()},{}]},{},[1])(1)});
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}]},{},[4])(4)
+});

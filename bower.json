@@ -27,6 +27,7 @@
     "prism": "gh-pages"
   },
   "dependencies": {
-    "Element": "hirokiosame/Element"
+    "Element": "hirokiosame/Element",
+    "EventEmitter": "hirokiosame/EventEmitter"
   }
 }

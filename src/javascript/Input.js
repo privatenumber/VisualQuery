@@ -2,7 +2,7 @@ module.exports = (function(){
 
 	'use strict';
 
-	var EventEmitter = require("./EventEmitter");
+	var EventEmitter = require("EventEmitter");
 	var E = require("Element");
 
 

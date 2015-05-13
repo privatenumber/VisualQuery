@@ -13,7 +13,7 @@ module.exports = function(grunt) {
 			code: {
 				files: {
 					'dist/css/VisualQuery.css' : 'src/css/VisualQuery.scss',
-					'dist/example/demo.css' : 'src/css/demo.scss'
+					'dist/demo/demo.css' : 'src/css/demo.scss'
 				}	
 			}
 		},
@@ -40,7 +40,7 @@ module.exports = function(grunt) {
 					// }
 				},
 				files: {
-					"dist/example/index.html": "src/jade/index.jade"
+					"dist/demo/index.html": "src/jade/index.jade"
 				}
 			}
 		},

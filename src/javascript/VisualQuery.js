@@ -22,8 +22,11 @@ module.exports = function VisualQuery(selector, _options){
 	if( !selected ){ throw new Error("No element is selected"); }
 
 
+	// Collection of Parameters - Singleton
+	var Parameters = require("./Parameters");
 
-	// Validate Options
+
+	// Default Options
 	var options = Object.create({
 		strict: false,
 		schema: [],
@@ -32,13 +35,10 @@ module.exports = function VisualQuery(selector, _options){
 		callback: function(){},
 	});
 
-	for( var prop in _options ){	
+	// Overwite default
+	for( var prop in _options ){
 		options[prop] = _options[prop];
 	}
-
-
-	// Collection of Parameters - Singleton
-	var Parameters = require("./Parameters");
 
 	// Initialize
 	Parameters.init(options);

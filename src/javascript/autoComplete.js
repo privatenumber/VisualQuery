@@ -2,7 +2,8 @@ module.exports = (function(){
 
 	'use strict';
 
-	var EventEmitter = require("./EventEmitter");
+	var EventEmitter = require("EventEmitter");
+
 	var E = require("Element");
 
 	var ul = E("ul", { "class": "autoComplete" })
@@ -23,7 +24,7 @@ module.exports = (function(){
 
 			selected = E(li).addClass("selected");
 
-			EE.emit("hover", selected._.innerText);
+			EE.emit("hover", selected.text());
 		}
 
 		function onInput(){
@@ -62,6 +63,8 @@ module.exports = (function(){
 
 			// Down
 			if( e.keyCode === 40 ){
+
+				// If already selected, go to next
 				if( selected && selected.shown() ){
 
 					var next;
@@ -178,11 +181,13 @@ module.exports = (function(){
 		}
 
 		options.appendTo.append(ul);
+		var rectP = options.appendTo._.getBoundingClientRect(),
+			rectC = el._.getBoundingClientRect();
 
 		ul.show()
 		.offset(
-			el._.offsetTop + el._.offsetHeight + "px",
-			el._.offsetLeft + "px"
+			(rectC.top - rectP.top) + rectC.height + document.body.scrollTop + "px",
+			(rectC.left - rectP.left) + document.body.scrollLeft + "px"
 		);
 
 

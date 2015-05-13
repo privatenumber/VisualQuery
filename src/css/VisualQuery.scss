@@ -1,7 +1,6 @@
 /* Visual Query Container (Parameters + AutoComplete) */
 div#anydiv{
 
-	position: relative;
 	box-sizing: border-box;
 
 	*{
@@ -51,6 +50,8 @@ div#anydiv{
 	/* Parameters Container */
 	div.parameters{
 
+
+		position: relative;
 		box-sizing: border-box;
 
 		cursor: text;

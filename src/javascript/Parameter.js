@@ -2,13 +2,14 @@ module.exports = (function(){
 
 	'use strict';
 
+	var E = require("Element");
+	var EventEmitter = require("EventEmitter");
+
 	var autoComplete = require("./autoComplete");
 
 	var Input = require("./Input");
 
-	var EventEmitter = require("./EventEmitter");
 
-	var E = require("Element");
 
 	// Create Parameter Class
 	function Parameter(collection, param){

@@ -2,10 +2,11 @@ module.exports = (function(){
 
 	'use strict';
 
+	var E = require("Element");
+	
 	// Individual Parameter
 	var Parameter = require("./Parameter");
 
-	var E = require("Element");
 
 	// Placeholder Text
 	var placeholder = E("div", { "class": "placeholder" });
