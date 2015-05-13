@@ -200,8 +200,8 @@ module.exports = (function(){
 
 		ul.show()
 		.offset(
-			(rectC.top - rectP.top - appendTo.scrollTop) + rectC.height + document.body.scrollTop + "px",
-			(rectC.left - rectP.left - appendTo.scrollLeft) + document.body.scrollLeft + "px"
+			(rectC.top - rectP.top - appendTo._.scrollTop) + rectC.height + document.body.scrollTop + "px",
+			(rectC.left - rectP.left - appendTo._.scrollLeft) + document.body.scrollLeft + "px"
 		);
 
 
