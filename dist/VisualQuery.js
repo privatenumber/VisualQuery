@@ -600,9 +600,10 @@ module.exports = (function(){
 
 	'use strict';
 
-	var EventEmitter = require("EventEmitter");
 
 	var E = require("Element");
+	var EventEmitter = require("EventEmitter");
+
 
 	var ul = E("ul", { "class": "autoComplete" })
 				.css("position", "absolute")
@@ -763,36 +764,53 @@ module.exports = (function(){
 		};
 	})();
 
+	var appendedTo,
+		inputEl;
+
+	function adjustLocation(){
+
+		var rectContain = appendedTo._.getBoundingClientRect(),
+			rectIn = inputEl._.getBoundingClientRect();
+
+		if( !(rectContain.left < rectIn.left && rectIn.left < rectContain.left + rectContain.width) ){
+			ul.hide(); return;
+		}
+
+
+		ul.show().offset(0, 0);
+
+		var	rectUl = ul._.getBoundingClientRect();
+
+		ul
+		.offset(
+			(rectIn.top - rectUl.top + rectIn.height) + "px",
+			(rectIn.left - rectUl.left) + "px"
+		);
+	}
+
 	return function(el, options){
 
 		// Enforce input-text
 		if( el._.tagName !== "INPUT" || el.attr("type") !== "text" ){
-			return new Error("Autocomplete must be bound to an input-text element");
+			throw new Error("Autocomplete must be bound to an input-text element");
 		}
 
 		// Unbind
-		if( !(options instanceof Object) ){ return ul.hide(); }
+		if( !(options instanceof Object) ){
+			ul.hide();
+			inputEl.off("scroll", adjustLocation);
+			appendedTo.off("scroll", adjustLocation);
+			return;
+		}
 
 		// Verify that appendTo exists
 		if( !options.appendTo ){
-			return new Error("The appendTo property is required to render the auto complete");
+			throw new Error("The appendTo property is required to render the auto complete");
 		}
 
-		var appendTo = options.appendTo;
 
-		function adjustLocation(){
-
-			var rectP = appendTo._.getBoundingClientRect(),
-				rectC = el._.getBoundingClientRect();
-
-			ul.show()
-			.offset(
-				(rectC.top - rectP.top - appendTo._.scrollTop) + rectC.height + document.body.scrollTop + "px",
-				(rectC.left - rectP.left - appendTo._.scrollLeft) + document.body.scrollLeft + "px"
-			);
-		}
-
-		appendTo
+		inputEl = el.on("input", adjustLocation);
+		(appendedTo = options.appendTo)
 			.append(ul)
 			.on("scroll", adjustLocation);
 
@@ -903,11 +921,20 @@ module.exports = (function(){
 
 	E.prototype.on = function on(eventNames, eventCallback, useCapture){
 
+		if( !(this._events instanceof Object) ){ this._events = {}; }
+
 		useCapture = !!useCapture;
 		eventNames = eventNames.split(" ");
 
-		for( var i = 0, len = eventNames.length; i < len; i++ ){
-			this._.addEventListener(eventNames[i], eventCallback, useCapture);
+		var i = eventNames.length;
+		while( i-- ){
+			var eName = eventNames[i];
+
+			// Keep track of event listeners for future removal
+			if( !(this._events[eName] instanceof Array) ){ this._events[eName] = []; }
+			this._events[eName].push(eventCallback);
+
+			this._.addEventListener(eName, eventCallback, useCapture);
 		}
 
 		return this;
@@ -915,10 +942,39 @@ module.exports = (function(){
 
 	E.prototype.off = function off(eventNames, eventCallback){
 
+		if( !(this._events instanceof Object) ){ this._events = {}; }
+
 		eventNames = eventNames.split(" ");
 
-		for( var i = 0, len = eventNames.length; i < len; i++ ){
-			this._.removeEventListener(eventNames[i], eventCallback);
+		var i = eventNames.length;
+
+		// Remove particular event listener
+		if( eventCallback instanceof Function ){
+
+			while( i-- ){
+				var eName = eventNames[i];
+
+				if( !(this._events[eName] instanceof Array) ){ continue; }
+
+				var idx = this._events[eName].indexOf(eventCallback);
+
+				if( idx !== -1 ){ this._events[eName].splice(idx, 1); }
+
+				this._.removeEventListener(eName, eventCallback);
+			}
+		}
+
+		// Remove all event listeners
+		else{
+			while( i-- ){
+				var eName = eventNames[i];
+				if( !(this._events[eName] instanceof Array) ){ continue; }
+
+				var cb;
+				while( cb = this._events[eName].pop() ){
+					this._.removeEventListener(eName, cb);
+				}
+			}
 		}
 
 		return this;
