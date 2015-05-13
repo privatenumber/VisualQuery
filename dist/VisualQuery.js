@@ -778,16 +778,25 @@ module.exports = (function(){
 			return new Error("The appendTo property is required to render the auto complete");
 		}
 
-		options.appendTo.append(ul);
-		var rectP = options.appendTo._.getBoundingClientRect(),
-			rectC = el._.getBoundingClientRect();
+		var appendTo = options.appendTo;
 
-		ul.show()
-		.offset(
-			(rectC.top - rectP.top) + rectC.height + document.body.scrollTop + "px",
-			(rectC.left - rectP.left) + document.body.scrollLeft + "px"
-		);
+		function adjustLocation(){
 
+			var rectP = appendTo._.getBoundingClientRect(),
+				rectC = el._.getBoundingClientRect();
+
+			ul.show()
+			.offset(
+				(rectC.top - rectP.top - appendTo._.scrollTop) + rectC.height + document.body.scrollTop + "px",
+				(rectC.left - rectP.left - appendTo._.scrollLeft) + document.body.scrollLeft + "px"
+			);
+		}
+
+		appendTo
+			.append(ul)
+			.on("scroll", adjustLocation);
+
+		adjustLocation();
 
 		return	LIs
 				.setDatalist(options.datalist)
