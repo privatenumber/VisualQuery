@@ -180,7 +180,20 @@ module.exports = (function(){
 			return new Error("The appendTo property is required to render the auto complete");
 		}
 
-		options.appendTo.append(ul);
+		options.appendTo
+			.append(ul)
+			.on("scroll", function(){
+
+				var rectP = options.appendTo._.getBoundingClientRect(),
+					rectC = el._.getBoundingClientRect();
+
+				ul.show()
+				.offset(
+					(rectC.top - rectP.top) + rectC.height + document.body.scrollTop + "px",
+					(rectC.left - rectP.left) + document.body.scrollLeft + "px"
+				);
+			});
+
 		var rectP = options.appendTo._.getBoundingClientRect(),
 			rectC = el._.getBoundingClientRect();
 
