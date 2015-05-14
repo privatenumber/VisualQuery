@@ -5,11 +5,11 @@ module.exports = (function(){
 	var EventEmitter = require("EventEmitter");
 	var E = require("Element");
 
-
 	var inputResize = require("./inputResize");
 
 
-	function Input(name, value){
+
+	function Input(name, value, type){
 
 		// Inherit event emitter
 		EventEmitter.apply(this);
@@ -46,11 +46,15 @@ module.exports = (function(){
 
 	Input.prototype.focus = function(start){
 
+		this.$._.disabled = false;
+
 		if(
-			this.$._.type !== "number" &&
+			// this.$._.type !== "number" &&
 			typeof start === "number" &&
 			this.$._.setSelectionRange
 		){
+			// If start is -0 (+0 === -0 but Infinity =/= -Infinity)
+			if( (1/start) === -Infinity ){ start = this.$._.value.length; }
 
 			// Beacause of Chrome removing Select API on new input types (eg. number)
 			this.$._.setSelectionRange(start, start);
@@ -85,7 +89,10 @@ module.exports = (function(){
 
 		this.$
 			.on("focus", function(){ self.emit("focus"); })
-			.on("blur", function(){ self.emit("blur"); })
+			.on("blur", function(){
+				self.emit("blur");
+				self.$._.disabled = true;
+			})
 			.on("change", function(){ self.emit("change"); })
 			.on("keydown", function(e){
 
@@ -122,7 +129,7 @@ module.exports = (function(){
 
 	Input.prototype.validate = function(){
 
-		var value = this.$.value;
+		var value = this.$._.value;
 
 		// Length check
 		if( value.length === 0 ){ return false; }

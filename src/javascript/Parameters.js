@@ -9,9 +9,7 @@ module.exports = (function(){
 
 
 	// Placeholder Text
-	var placeholder = E("div", { "class": "placeholder" });
-		placeholder._.style.pointerEvents = "none";
-
+	var placeholder =	E("div", { "class": "placeholder" }).css("pointerEvents", "none");
 
 	// Main input field
 	var mainInput = E("div", { "class": "parameters" })
@@ -30,7 +28,7 @@ module.exports = (function(){
 
 							var position = param.$._.getBoundingClientRect();
 
-							var top = document.body.scrollTop+ position.top;
+							var top = document.body.scrollTop + position.top;
 							if(
 								// Stop Iterating if Row is below
 								e.pageY < position.top ||
@@ -59,7 +57,7 @@ module.exports = (function(){
 		API.$ =	mainInput;
 
 		// Initialize
-		API.init = function(options){
+		API.init = function init(options){
 
 			this.opts = options;
 			console.log( this.opts );
@@ -109,7 +107,11 @@ module.exports = (function(){
 				API.callback();
 			})
 			.on("prevParameter", function(prev){
-				( prev = API.getPrev(parameter) ) && prev.value.focus();
+				if( (prev = API.getPrev(parameter)) ){
+					prev.value.focus();
+				}else{
+					API.insertAt(0, new Parameter(API), true);
+				}
 			})
 			.on("nextParameter", function(next){
 				if( (next = API.getNext(parameter)) ){
@@ -120,7 +122,7 @@ module.exports = (function(){
 			});
 		}
 
-		API.insertAt = function(idx, parameter, focus){
+		API.insertAt = function insertAt(idx, parameter, focus){
 
 			// Hide placeholder
 			placeholder.hide();
@@ -140,7 +142,7 @@ module.exports = (function(){
 			if( focus ){ parameter.name.focus(); }
 		};
 
-		API.removeAt = function(idx){
+		API.removeAt = function removeAt(idx){
 
 			// Remove from array
 			var removed = this.parameters.splice(idx, 1);
@@ -154,7 +156,7 @@ module.exports = (function(){
 			API.callback();
 		};
 
-		API.remove = function(parameter, find){
+		API.remove = function remove(parameter, find){
 
 			// Ignore if not found
 			if( (find = this.parameters.indexOf(parameter)) === -1 ){ return false; }
@@ -163,19 +165,19 @@ module.exports = (function(){
 			this.removeAt( find );
 		};
 
-		API.getPrev = function(current, i){
+		API.getPrev = function getPrev(current, i){
 			if( (i = this.parameters.indexOf(current)) !== -1 ){
 				return this.parameters[ i - 1 ];
 			}
 		};
 
-		API.getNext = function(current, i){
+		API.getNext = function getNext(current, i){
 			if( (i = this.parameters.indexOf(current)) !== -1 ){
 				return this.parameters[ i + 1 ];
 			}
 		};
 
-		API.renderTo = function(target){
+		API.renderTo = function renderTo(target){
 
 			// Render
 			E(target).append(this.$);
@@ -185,7 +187,7 @@ module.exports = (function(){
 			});
 		};
 
-		API.callback = function(){
+		API.callback = function callback(){
 			API.opts.callback(API.parameters.map(function(p){ return p.toJSON(); }));
 		};
 

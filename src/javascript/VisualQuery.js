@@ -28,6 +28,7 @@ module.exports = function VisualQuery(selector, _options){
 
 	// Default Options
 	var options = Object.create({
+		appendAutoCompleteTo: null,
 		strict: false,
 		schema: [],
 		defaultQuery: [],

@@ -25,19 +25,15 @@ module.exports = (function(){
 		this.operator = new Input("operator", param.operator);
 		this.value = new Input("value", param.value);
 
-		// Create Remove button
-		var removeButton = E("span", { "class": "remove", "html": "&times;" })
-							.on("click", this.emit.bind(this, "remove"));
-
 		// Create DOM
 		this.$ = 	E("div", { "class": "parameter" })
 					.append(
-						removeButton,
+						E("span", { "class": "remove", "html": "&times;" })
+						.on("click", this.emit.bind(this, "remove")),
 						this.name.$,
 						this.operator.$,
 						this.value.$
 					);
-
 
 		this.bindEvents();
 	}
@@ -89,6 +85,21 @@ module.exports = (function(){
 		this.bindOperator();
 
 		this.bindValue();
+
+		this.$.on("mousedown", function(e){
+			e.preventDefault();
+
+			if( !self.name.validate() ){
+				return self.name.focus();
+			}
+
+			if( !self.operator.validate() ){
+				return self.operator.focus();
+			}
+
+			self.value.focus();
+			
+		});
 	};
 
 	Parameter.prototype.bindName = function(){
@@ -128,7 +139,7 @@ module.exports = (function(){
 
 		this.operator
 		.on("nextInput", function(){ self.value.focus(0); })
-		.on("prevInput", function(){ self.name.focus(); })
+		.on("prevInput", function(){ self.name.focus(-0); })
 		.on("focus", function(){
 
 			// Add autocomplete
@@ -150,7 +161,7 @@ module.exports = (function(){
 
 		this.value
 		.on("nextInput", function(){ self.emit("nextParameter"); })
-		.on("prevInput", function(){ self.operator.focus(); })
+		.on("prevInput", function(){ self.operator.focus(-0); })
 		.on("focus", function(){
 
 			if( self.value.$._.type !== "text" ){ return; }
