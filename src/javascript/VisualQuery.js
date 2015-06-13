@@ -12,8 +12,8 @@ module.exports = function VisualQuery(selector, _options){
 
 	// Check if DOM
 	else if(
-		(typeof HTMLElement === "object" && selector instanceof HTMLElement) ||
-		(selector instanceof Object && selector.nodeType === 1 && selector.nodeName === "string")
+		(typeof HTMLElement === "function" && selector instanceof HTMLElement) ||
+		(selector instanceof Object && selector.nodeType === 1 && typeof selector.nodeName === "string")
 	){
 		selected = selector;
 	}
@@ -33,6 +33,7 @@ module.exports = function VisualQuery(selector, _options){
 		schema: [],
 		defaultQuery: [],
 		placeholder: "",
+		focusCallback: function(){},
 		callback: function(){},
 	});
 

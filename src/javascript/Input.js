@@ -9,7 +9,7 @@ module.exports = (function(){
 
 
 
-	function Input(name, value, type){
+	function Input(name, value /*, type*/ ){
 
 		// Inherit event emitter
 		EventEmitter.apply(this);

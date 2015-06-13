@@ -6,11 +6,11 @@ module.exports = (function(){
 	var EventEmitter = require("EventEmitter");
 	var E = require("Element");
 
-
 	var inputResize = require("./inputResize");
 
 
-	function Input(name, value){
+
+	function Input(name, value /*, type*/ ){
 
 		// Inherit event emitter
 		EventEmitter.apply(this);
@@ -47,11 +47,15 @@ module.exports = (function(){
 
 	Input.prototype.focus = function(start){
 
+		this.$._.disabled = false;
+
 		if(
-			this.$._.type !== "number" &&
+			// this.$._.type !== "number" &&
 			typeof start === "number" &&
 			this.$._.setSelectionRange
 		){
+			// If start is -0 (+0 === -0 but Infinity =/= -Infinity)
+			if( (1/start) === -Infinity ){ start = this.$._.value.length; }
 
 			// Beacause of Chrome removing Select API on new input types (eg. number)
 			this.$._.setSelectionRange(start, start);
@@ -86,7 +90,10 @@ module.exports = (function(){
 
 		this.$
 			.on("focus", function(){ self.emit("focus"); })
-			.on("blur", function(){ self.emit("blur"); })
+			.on("blur", function(){
+				self.emit("blur");
+				self.$._.disabled = true;
+			})
 			.on("change", function(){ self.emit("change"); })
 			.on("keydown", function(e){
 
@@ -123,7 +130,7 @@ module.exports = (function(){
 
 	Input.prototype.validate = function(){
 
-		var value = this.$.value;
+		var value = this.$._.value;
 
 		// Length check
 		if( value.length === 0 ){ return false; }
@@ -161,19 +168,15 @@ module.exports = (function(){
 		this.operator = new Input("operator", param.operator);
 		this.value = new Input("value", param.value);
 
-		// Create Remove button
-		var removeButton = E("span", { "class": "remove", "html": "&times;" })
-							.on("click", this.emit.bind(this, "remove"));
-
 		// Create DOM
 		this.$ = 	E("div", { "class": "parameter" })
 					.append(
-						removeButton,
+						E("span", { "class": "remove", "html": "&times;" })
+						.on("click", this.emit.bind(this, "remove")),
 						this.name.$,
 						this.operator.$,
 						this.value.$
 					);
-
 
 		this.bindEvents();
 	}
@@ -225,6 +228,21 @@ module.exports = (function(){
 		this.bindOperator();
 
 		this.bindValue();
+
+		this.$.on("mousedown", function(e){
+			e.preventDefault();
+
+			if( !self.name.validate() ){
+				return self.name.focus();
+			}
+
+			if( !self.operator.validate() ){
+				return self.operator.focus();
+			}
+
+			self.value.focus();
+			
+		});
 	};
 
 	Parameter.prototype.bindName = function(){
@@ -264,7 +282,7 @@ module.exports = (function(){
 
 		this.operator
 		.on("nextInput", function(){ self.value.focus(0); })
-		.on("prevInput", function(){ self.name.focus(); })
+		.on("prevInput", function(){ self.name.focus(-0); })
 		.on("focus", function(){
 
 			// Add autocomplete
@@ -286,7 +304,7 @@ module.exports = (function(){
 
 		this.value
 		.on("nextInput", function(){ self.emit("nextParameter"); })
-		.on("prevInput", function(){ self.operator.focus(); })
+		.on("prevInput", function(){ self.operator.focus(-0); })
 		.on("focus", function(){
 
 			if( self.value.$._.type !== "text" ){ return; }
@@ -364,9 +382,7 @@ module.exports = (function(){
 
 
 	// Placeholder Text
-	var placeholder = E("div", { "class": "placeholder" });
-		placeholder._.style.pointerEvents = "none";
-
+	var placeholder =	E("div", { "class": "placeholder" }).css("pointerEvents", "none");
 
 	// Main input field
 	var mainInput = E("div", { "class": "parameters" })
@@ -385,7 +401,7 @@ module.exports = (function(){
 
 							var position = param.$._.getBoundingClientRect();
 
-							var top = document.body.scrollTop+ position.top;
+							var top = document.body.scrollTop + position.top;
 							if(
 								// Stop Iterating if Row is below
 								e.pageY < position.top ||
@@ -414,7 +430,7 @@ module.exports = (function(){
 		API.$ =	mainInput;
 
 		// Initialize
-		API.init = function(options){
+		API.init = function init(options){
 
 			this.opts = options;
 			console.log( this.opts );
@@ -464,7 +480,11 @@ module.exports = (function(){
 				API.callback();
 			})
 			.on("prevParameter", function(prev){
-				( prev = API.getPrev(parameter) ) && prev.value.focus();
+				if( (prev = API.getPrev(parameter)) ){
+					prev.value.focus();
+				}else{
+					API.insertAt(0, new Parameter(API), true);
+				}
 			})
 			.on("nextParameter", function(next){
 				if( (next = API.getNext(parameter)) ){
@@ -475,7 +495,7 @@ module.exports = (function(){
 			});
 		}
 
-		API.insertAt = function(idx, parameter, focus){
+		API.insertAt = function insertAt(idx, parameter, focus){
 
 			// Hide placeholder
 			placeholder.hide();
@@ -495,7 +515,7 @@ module.exports = (function(){
 			if( focus ){ parameter.name.focus(); }
 		};
 
-		API.removeAt = function(idx){
+		API.removeAt = function removeAt(idx){
 
 			// Remove from array
 			var removed = this.parameters.splice(idx, 1);
@@ -509,7 +529,7 @@ module.exports = (function(){
 			API.callback();
 		};
 
-		API.remove = function(parameter, find){
+		API.remove = function remove(parameter, find){
 
 			// Ignore if not found
 			if( (find = this.parameters.indexOf(parameter)) === -1 ){ return false; }
@@ -518,19 +538,19 @@ module.exports = (function(){
 			this.removeAt( find );
 		};
 
-		API.getPrev = function(current, i){
+		API.getPrev = function getPrev(current, i){
 			if( (i = this.parameters.indexOf(current)) !== -1 ){
 				return this.parameters[ i - 1 ];
 			}
 		};
 
-		API.getNext = function(current, i){
+		API.getNext = function getNext(current, i){
 			if( (i = this.parameters.indexOf(current)) !== -1 ){
 				return this.parameters[ i + 1 ];
 			}
 		};
 
-		API.renderTo = function(target){
+		API.renderTo = function renderTo(target){
 
 			// Render
 			E(target).append(this.$);
@@ -540,7 +560,7 @@ module.exports = (function(){
 			});
 		};
 
-		API.callback = function(){
+		API.callback = function callback(){
 			API.opts.callback(API.parameters.map(function(p){ return p.toJSON(); }));
 		};
 
@@ -561,8 +581,8 @@ module.exports = function VisualQuery(selector, _options){
 
 	// Check if DOM
 	else if(
-		(typeof HTMLElement === "object" && selector instanceof HTMLElement) ||
-		(selector instanceof Object && selector.nodeType === 1 && selector.nodeName === "string")
+		(typeof HTMLElement === "function" && selector instanceof HTMLElement) ||
+		(selector instanceof Object && selector.nodeType === 1 && typeof selector.nodeName === "string")
 	){
 		selected = selector;
 	}
@@ -577,10 +597,12 @@ module.exports = function VisualQuery(selector, _options){
 
 	// Default Options
 	var options = Object.create({
+		appendAutoCompleteTo: null,
 		strict: false,
 		schema: [],
 		defaultQuery: [],
 		placeholder: "",
+		focusCallback: function(){},
 		callback: function(){},
 	});
 
