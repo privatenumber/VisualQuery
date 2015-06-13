@@ -95,12 +95,12 @@ module.exports = (function(){
 			.on("focus", function(){
 				// Toggle Class - Focus
 				API.$.addClass("selected");
-				API.focusCallback();
+				API.opts.focusCallback();
 			})
 			.on("blur", function(){
 				// Toggle Class - Blur
 				API.$.removeClass("selected");
-				API.blurCallback();
+				API.opts.blurCallback();
 			})
 			.on("remove", function(){
 				API.remove(parameter);
