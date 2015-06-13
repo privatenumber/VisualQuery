@@ -34,6 +34,7 @@ module.exports = function VisualQuery(selector, _options){
 		defaultQuery: [],
 		placeholder: "",
 		focusCallback: function(){},
+		blurCallback: function(){},
 		callback: function(){},
 	});
 
