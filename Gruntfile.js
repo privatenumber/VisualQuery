@@ -150,6 +150,6 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-browserify');
 
 	grunt.registerTask('default', ['sass', 'jshint', 'jade', 'browserify', 'uglify', 'closure-compiler']);
-	grunt.registerTask('develop', ['sass', 'jshint', 'jade', 'browserify', 'watch']);
+	grunt.registerTask('develop', ['sass', 'jade', 'browserify', 'watch']);
 
 };

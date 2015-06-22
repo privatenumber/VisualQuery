@@ -9,11 +9,12 @@ module.exports = (function(){
 
 
 
-	function Input(name, value /*, type*/ ){
+	function Input(name, value){
 
 		// Inherit event emitter
 		EventEmitter.apply(this);
 
+		this.type = "text";
 		this.name = name;
 		
 		// Create DOM
@@ -25,45 +26,32 @@ module.exports = (function(){
 				})
 				.css("width", "1px");
 
-		if( value ){
+		if( typeof value === "string" ){
 			this.$._.value = value;	
 		}
+
 
 		this.bindEvents();
 	}
 
 	Input.prototype = Object.create(EventEmitter.prototype);
 
-	Input.prototype.toJSON = function(){
-		return this.$._.value;
+	Input.prototype.lean = function lean(){
+		return this.$._.value || "";
 	};
 
-	Input.prototype.previewValue = function(value){
+	Input.prototype.previewValue = function previewValue(value){
+
 		this.$
 			.attr("placeholder", value)
 			.trigger("input");
 	};
 
-	Input.prototype.focus = function(start){
-
-		this.$._.disabled = false;
-
-		if(
-			// this.$._.type !== "number" &&
-			typeof start === "number" &&
-			this.$._.setSelectionRange
-		){
-			// If start is -0 (+0 === -0 but Infinity =/= -Infinity)
-			if( (1/start) === -Infinity ){ start = this.$._.value.length; }
-
-			// Beacause of Chrome removing Select API on new input types (eg. number)
-			this.$._.setSelectionRange(start, start);
-		}
-
-		this.$._.focus();
+	Input.prototype.focus = function focus(start){
+		this.$.focus(start);
 	};
 
-	Input.prototype.changeValue = function(value){
+	Input.prototype.changeValue = function changeValue(value){
 
 		// Value
 		if( value ){
@@ -80,7 +68,7 @@ module.exports = (function(){
 		this.emit("nextInput");
 	};
 
-	Input.prototype.bindEvents = function(){
+	Input.prototype.bindEvents = function bindEvents(){
 		var self = this;
 
 		this.on("rendered", function(){
@@ -91,7 +79,6 @@ module.exports = (function(){
 			.on("focus", function(){ self.emit("focus"); })
 			.on("blur", function(){
 				self.emit("blur");
-				self.$._.disabled = true;
 			})
 			.on("change", function(){ self.emit("change"); })
 			.on("keydown", function(e){
@@ -110,7 +97,6 @@ module.exports = (function(){
 					// Focus Previous Parameter
 					self.emit("prevInput");
 				}
-
 
 				// Right: If the Caret is at the end of the input
 				if(
@@ -131,11 +117,35 @@ module.exports = (function(){
 
 		var value = this.$._.value;
 
-		// Length check
-		if( value.length === 0 ){ return false; }
+		var check;
+		
+		if( this.type === "number" && !(check = value.match(/^\d+$/)) ){
+			return "Not a number";
+		}
+
+		if( this.type === "time" && !(check = value.match(/^\d{1,2}:\d{2} (?:AM|PM)$/)) ){
+			return "Not a valid time format";
+		}
+
 
 		return true;
 	};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	return Input;
 })();

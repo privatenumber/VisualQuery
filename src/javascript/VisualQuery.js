@@ -3,11 +3,13 @@ module.exports = function VisualQuery(selector, _options){
 
 	'use strict';
 
-	var selected;
+	var $selected;
+
+	/* Argument Validation */
 
 	// Check if query
 	if( typeof selector === "string" ){
-		selected = document.querySelector(selector);
+		$selected = document.querySelector(selector);
 	}
 
 	// Check if DOM
@@ -15,27 +17,22 @@ module.exports = function VisualQuery(selector, _options){
 		(typeof HTMLElement === "function" && selector instanceof HTMLElement) ||
 		(selector instanceof Object && selector.nodeType === 1 && typeof selector.nodeName === "string")
 	){
-		selected = selector;
+		$selected = selector;
 	}
 
 	// If nothing has been selected
-	if( !selected ){ throw new Error("No element is selected"); }
+	if( !$selected ){ throw new Error("No element is selected"); }
 
 
-	// Collection of Parameters - Singleton
-	var Parameters = require("./Parameters");
-
+	/* Set onfiguration  */
 
 	// Default Options
 	var options = Object.create({
 		appendAutoCompleteTo: null,
 		strict: false,
-		schema: [],
+		schema: {},
 		defaultQuery: [],
-		placeholder: "",
-		focusCallback: function(){},
-		blurCallback: function(){},
-		callback: function(){},
+		placeholder: ""
 	});
 
 	// Overwite default
@@ -43,9 +40,9 @@ module.exports = function VisualQuery(selector, _options){
 		options[prop] = _options[prop];
 	}
 
-	// Initialize
-	Parameters.init(options);
+	// Collection of Parameters - Singleton
+	var Parameters = require("./Parameters");
 
-	// Render
-	Parameters.renderTo(selected);
+	// Initialize
+	return (new Parameters($selected, options));
 };

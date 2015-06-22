@@ -1,52 +1,30 @@
 module.exports = (function(){
-
+	
 	'use strict';
 
 
 	var E = require("Element");
-	var EventEmitter = require("EventEmitter");
+
+	function Autocomplete( $parent ){
+
+		this.$ul =	E("ul", { "class": "autoComplete" })
+					.css("position", "absolute")
+					.hide();
+
+		this.lis = [];
+		this.selectedLi = null;
 
 
-	var ul = E("ul", { "class": "autoComplete" })
-				.css("position", "absolute")
-				.hide();
+		(this.$parent = $parent)
+			.append( this.$ul )
+			.on("scroll", this.adjustLocation.bind(this));
 
 
-	var LIs = (function(){
 
-		var input = null, EE = null;
+		var self = this;
 
-		var lis = [], selected = null;
-
-		function select(li){
-
-			// Unselect currently selected
-			if( selected ){ selected.removeClass("selected"); }
-
-			selected = E(li).addClass("selected");
-
-			EE.emit("hover", selected.text());
-		}
-
-		function onInput(){
-
-			// If Typed Doesn't match, Don't show
-			var hidden = 0;
-			for( var i = 0; i < lis.length; i++ ){
-				if( lis[i]._.innerText.match(new RegExp(this.value, "i")) ){
-					lis[i].show();
-				}else{
-					lis[i].hide();
-					hidden++;
-				}
-			}
-
-			// Show or hide the list
-			if( hidden === lis.length ){ ul.hide(); }
-			else{ ul.show(); }
-		}
-
-		function onKeydown(e){
+		// Event based functions, must bind to self via closure
+		this.onKeydown = function onKeydown(e){
 
 			// Up
 			if( e.keyCode === 38 ){
@@ -54,11 +32,11 @@ module.exports = (function(){
 				var prev;
 				if(
 					// Currently selected is still displayed
-					(selected && selected.shown()) &&
-					(prev = selected.prev()) && prev.shown()
+					(self.selectedLi && self.selectedLi.shown()) &&
+					(prev = self.selectedLi.prev()) && prev.shown()
 				){
 					e.preventDefault();
-					select(prev);
+					self.selectLi(prev);
 				}
 			}
 
@@ -66,22 +44,23 @@ module.exports = (function(){
 			if( e.keyCode === 40 ){
 
 				// If already selected, go to next
-				if( selected && selected.shown() ){
+				if( self.selectedLi && self.selectedLi.shown() ){
 
 					var next;
-					if( (next = selected.next()) && next.shown() ){
+					if( (next = self.selectedLi.next()) && next.shown() ){
 						e.preventDefault();
-						select(next);
+						self.selectLi(next);
 					}
 
 				// Select first visible li if not selected yet
 				}else{
 
 					var i;
-					for( i = 0; i < lis.length; i++ ){
-						if( lis[i].shown() ){
+					for( i = 0; i < self.lis.length; i++ ){
+
+						if( self.lis[i].shown() ){
 							e.preventDefault();
-							select(lis[i]);
+							self.selectLi(self.lis[i]);
 							break;
 						}
 					}
@@ -90,136 +69,160 @@ module.exports = (function(){
 
 			// Enter
 			if( e.keyCode === 13 ){
-				if( selected && selected.shown() ){
-					EE.emit(
+
+				if( self.selectedLi && self.selectedLi.shown() ){
+					self.EE.emit(
 						"selected",
-						selected.text(),
-						selected.attr("value")
+						self.selectedLi.text(),
+						self.selectedLi.attr("value")
 					);
 				}else{
-					EE.emit("selected");
+					self.EE.emit("selected");
 				}
 			}
-		}
-	
-		function createLi(text, value){
-			var li = 	E("li", { text: text })
-						.on("mouseover", function(){ select(this); })
-						.on("mousedown", function(e){ e.preventDefault(); })
-						.on("mouseup", function(){
-							if( selected && selected.shown() ){
-								EE.emit(
-									"selected",
-									selected.text(),
-									selected.attr("value")
-								);	
-							}
-						});
 
-
-			if( value ){ li.attr("value", value); }
-
-			return li;
-		}
-
-		return {
-			setDatalist: function (datalist){
-
-				// Empty array
-				lis.splice(0);
-
-				// Add every li
-				for(var key in datalist){
-					lis.push( createLi(datalist[key], !(datalist instanceof Array) && key ) );
-				}
-
-				// Reset Lis
-				ul.html("").append(lis);
-
-				return this;
-			},
-			listenTo: function(_input){
-
-				// Unlisten from previous input
-				if( input ){
-
-					selected = null;
-
-					input
-						.off("keydown", onKeydown)
-						.off("input", onInput);
-				}
-
-				input = _input;
-
-				EE = new EventEmitter();
-
-				input
-					.on("keydown", onKeydown)
-					.on("input", onInput);
-
-				// Trigger for current input value
-				onInput.apply(input._);
-
-				return EE;
-			}
 		};
-	})();
 
-	var appendedTo,
-		inputEl;
+		this.onInput = function onInput(){
 
-	function adjustLocation(){
+			// If Typed Doesn't match, Don't show
+			var hidden = 0;
+			for( var i = 0; i < self.lis.length; i++ ){
+				if( self.lis[i].text().match(new RegExp(this.value, "i")) ){
+					self.lis[i].show();
+				}else{
+					self.lis[i].hide();
+					hidden++;
+				}
+			}
 
-		var rectContain = appendedTo._.getBoundingClientRect(),
-			rectIn = inputEl._.getBoundingClientRect();
+			// Show or hide the list
+			if( hidden === self.lis.length ){ self.$ul.hide(); }
+			else{ self.$ul.show(); }
+		};
 
+
+		this.hide = function hide(){
+			self.$ul.hide();
+		};
+
+	}
+
+	Autocomplete.prototype.adjustLocation = function adjustLocation(){
+
+		var rectContain = this.$parent._.getBoundingClientRect(),
+			rectIn = this.$input._.getBoundingClientRect();
+
+		// If outside the visible area of scroll
 		if( !(rectContain.left < rectIn.left && rectIn.left < rectContain.left + rectContain.width) ){
-			ul.hide(); return;
+			this.$ul.hide(); return;
 		}
 
 
-		ul.show().offset(0, 0);
+		this.$ul.show().offset(0, 0);
 
-		var	rectUl = ul._.getBoundingClientRect();
+		var	rectUl = this.$ul._.getBoundingClientRect();
 
-		ul
+		this.$ul
 		.offset(
 			(rectIn.top - rectUl.top + rectIn.height) + "px",
 			(rectIn.left - rectUl.left) + "px"
 		);
-	}
-
-	return function(el, options){
-
-		// Enforce input-text
-		if( el._.tagName !== "INPUT" || el.attr("type") !== "text" ){
-			throw new Error("Autocomplete must be bound to an input-text element");
-		}
-
-		// Unbind
-		if( !(options instanceof Object) ){
-			ul.hide();
-			inputEl.off("scroll", adjustLocation);
-			appendedTo.off("scroll", adjustLocation);
-			return;
-		}
-
-		// Verify that appendTo exists
-		if( !options.appendTo ){
-			throw new Error("The appendTo property is required to render the auto complete");
-		}
-
-
-		inputEl = el.on("input", adjustLocation);
-		(appendedTo = options.appendTo)
-			.append(ul)
-			.on("scroll", adjustLocation);
-
-		adjustLocation();
-
-		return	LIs
-				.setDatalist(options.datalist)
-				.listenTo(el);
 	};
+
+
+	Autocomplete.prototype.selectLi = function selectLi(li){
+
+		// Unselect currently selected
+		if( this.selectedLi ){ this.selectedLi.removeClass("selected"); }
+
+		this.selectedLi = E(li).addClass("selected");
+
+		this.EE.emit("hover", this.selectedLi.text());
+
+		this.adjustLocation();
+	};
+
+	Autocomplete.prototype.createLi = function createLi(text, value){
+		var self = this;
+
+		var li = 	E("li", { text: text })
+					.on("mouseover", function(){ self.selectLi(this); })
+					.on("mousedown", function(e){ e.preventDefault(); })
+					.on("mouseup", function(){
+						if( self.selectedLi && self.selectedLi.shown() ){
+							self.EE.emit(
+								"selected",
+								self.selectedLi.text(),
+								self.selectedLi.attr("value")
+							);
+						}
+					});
+
+
+		if( value ){ li.attr("value", value); }
+
+		return li;
+	};
+
+	Autocomplete.prototype.setList = function setList(list){
+
+		// Empty array
+		this.lis.splice(0);
+
+
+		if( list instanceof Array ){
+
+			// Add every li
+			for( var key in list ){
+				this.lis.push( this.createLi(list[key], !(list instanceof Array) && key ) );
+			}
+		}
+
+		// Reset Lis
+		this.$ul.html("").append(this.lis);
+	};
+
+
+
+	Autocomplete.prototype.bindTo = function bindTo($input, list){
+
+		// Unbind from previous input
+		if( this.$input ){
+
+			// Unbind!
+			this.$input
+				.off("keydown", this.onKeydown)
+				.off("input", this.onInput)
+				.off("blur", this.hide);
+
+			this.$input = null;
+			this.EE = null;
+		}
+
+		var EventEmitter = require("EventEmitter");
+
+		this.EE = new EventEmitter();
+
+		// If there are suggestions to make...
+		// if( list instanceof Array && list.length > 0 ){
+
+			this.$input =	$input
+							.on("keydown", this.onKeydown)
+							.on("input", this.onInput)
+							.on("blur", this.hide);
+
+			this.setList(list);
+			this.adjustLocation();
+			this.onInput.apply($input._);
+		// }
+
+		return this.EE;
+	};
+
+
+
+
+
+	return Autocomplete;
 })();

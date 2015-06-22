@@ -5,7 +5,6 @@ module.exports = function inputResize(){
 	var	value = this.value,
 		useText = value || ( this.attributes.placeholder && this.attributes.placeholder.value ) || "";
 	
-
 	var shadow = document.createElement("span");
 	
 	shadow.textContent = useText;
@@ -30,14 +29,10 @@ module.exports = function inputResize(){
 		shadow.style[ruleName] = computedStyle[ruleName];
 	});
 	
-
-	
 	// Insert below
 	this.parentNode.appendChild(shadow);
 	
 	// Set Width
-	
-	
 	this.style.width = (
 		
 		// Width of Shadow + Fallback Width for Empty Inputs

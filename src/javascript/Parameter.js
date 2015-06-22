@@ -4,47 +4,51 @@ module.exports = (function(){
 
 	var E = require("Element");
 	var EventEmitter = require("EventEmitter");
-
-	var autoComplete = require("./autoComplete");
-
 	var Input = require("./Input");
 
 
-
 	// Create Parameter Class
-	function Parameter(collection, param){
+	function Parameter(param, autocomplete, schema){
 
 		// Inherit the event emitter
 		EventEmitter.apply(this);
 
-		this.collection = collection;
+		this.autocomplete = autocomplete;
+		this.schema = schema;
 
 		// Input DOMs
 		param = param || {};
 		this.name = new Input("name", param.name);
 		this.operator = new Input("operator", param.operator);
 		this.value = new Input("value", param.value);
-
+		
 		// Create DOM
 		this.$ = 	E("div", { "class": "parameter" })
 					.append(
+
+						// Delete button
 						E("span", { "class": "remove", "html": "&times;" })
 						.on("click", this.emit.bind(this, "remove")),
+
+						// Inputs
 						this.name.$,
 						this.operator.$,
 						this.value.$
 					);
+
+		this.validateInputs();
 
 		this.bindEvents();
 	}
 
 	Parameter.prototype = Object.create(EventEmitter.prototype);
 
-	Parameter.prototype.toJSON = function(){
+	Parameter.prototype.lean = function lean(){
 		return {
-			name: this.name.toJSON(),
-			operator: this.operator.toJSON(),
-			value: this.value.toJSON()
+			name: this.name.lean(),
+			operator: this.operator.lean(),
+			value: this.value.lean(),
+			invalid: this.invalid
 		};
 	};
 
@@ -85,21 +89,6 @@ module.exports = (function(){
 		this.bindOperator();
 
 		this.bindValue();
-
-		this.$.on("mousedown", function(e){
-			e.preventDefault();
-
-			if( !self.name.validate() ){
-				return self.name.focus();
-			}
-
-			if( !self.operator.validate() ){
-				return self.operator.focus();
-			}
-
-			self.value.focus();
-			
-		});
 	};
 
 	Parameter.prototype.bindName = function(){
@@ -114,22 +103,10 @@ module.exports = (function(){
 		.on("focus", function(){
 
 			// Add autocomplete
-			autoComplete(self.name.$, {
-				appendTo: self.collection.$,
-				datalist: self.collection.names
-			})
-			.on("hover", previewInput(self.name))
-			.on("selected", selected(self.name));
-		})
-
-		// Remove autocomplete
-		.on("blur", function(){
-			autoComplete(self.name.$);
-
-			// var type = self.collection.opts.schema[self.name.$._.value].type;
-			// if( type ){
-			// 	self.value.$._.type = type;
-			// }
+			self.autocomplete
+				.bindTo(self.name.$, self.schema.names)
+				.on("hover", previewInput(self.name))
+				.on("selected", selected(self.name));
 		});
 	};
 
@@ -141,18 +118,14 @@ module.exports = (function(){
 		.on("nextInput", function(){ self.value.focus(0); })
 		.on("prevInput", function(){ self.name.focus(-0); })
 		.on("focus", function(){
+			var schema = self.schema._[self.name.$._.value];
 
 			// Add autocomplete
-			autoComplete(self.operator.$, {
-				appendTo: self.collection.$,
-				datalist: self.collection.opts.schema[self.name.$._.value].operators
-			})
-			.on("hover", previewInput(self.operator))
-			.on("selected", selected(self.operator));
-		})
-
-		// Remove autocomplete
-		.on("blur", function(){ autoComplete(self.operator.$); });
+			self.autocomplete
+				.bindTo(self.operator.$, (schema instanceof Object && schema.operators instanceof Object) && schema.operators)
+				.on("hover", previewInput(self.operator))
+				.on("selected", selected(self.operator));
+		});
 	};
 
 	Parameter.prototype.bindValue = function(){
@@ -164,19 +137,30 @@ module.exports = (function(){
 		.on("prevInput", function(){ self.operator.focus(-0); })
 		.on("focus", function(){
 
-			if( self.value.$._.type !== "text" ){ return; }
+			var schema = self.schema._[self.name.$._.value];
 
 			// Add autocomplete
-			autoComplete(self.value.$, {
-				appendTo: self.collection.$,
-				datalist: self.collection.opts.schema[self.name.$._.value].values
-			})
-			.on("hover", previewInput(self.value))
-			.on("selected", selected(self.value));
-		})
+			self.autocomplete
+				.bindTo(self.value.$, (schema instanceof Object && schema.values instanceof Object) && schema.values)
+				.on("hover", previewInput(self.value))
+				.on("selected", selected(self.value));
 
-		// Remove autocomplete
-		.on("blur", function(){ autoComplete(self.value.$); });
+			if( !(schema instanceof Object) ){ return; }
+
+			// Type
+			if( typeof schema.type === "string" ){
+				self.value.type = schema.type;
+			}
+
+			// Placeholder
+			if(
+				(schema.valueAttrs instanceof Object) &&
+				typeof schema.valueAttrs.placeholder === "string"
+			){
+				self.value
+					.previewValue(schema.valueAttrs.placeholder);	
+			}
+		});
 	};
 
 	function previewInput(target){
@@ -202,27 +186,48 @@ module.exports = (function(){
 		// If All Empty, Delete
 		if( !(name + operator + value).length ){
 			this.emit("remove");
-			return false;
+			return;
 		}
 
 		// If Any of them is Empty
 		if( !name.length || !operator.length || !value.length ){
-			this.$.addClass("error");
-			return false;
-		}
-/*
-		// Invalid name && Strict => Error
-		if( options.strict && !parameters.hasOwnProperty(name) ){
-			return this.$.addClass("error").attr("title", "Invalid Parameter") && false;
+			this.$.addClass("error").attr("title", (this.invalid = "Incomplete parameter"));
+			return;
 		}
 
+		// Invalid name && Strict => Error
+		if( this.schema.strict ){
+			
+			if( !this.schema._.hasOwnProperty(name) ){
+				this.$.addClass("error").attr("title", (this.invalid = "Invalid name"));
+				return;
+			}
+			
+			if( this.schema._[name].operators.indexOf(operator) === -1 ){
+				this.$.addClass("error").attr("title", (this.invalid = "Invalid operator"));
+				return;
+			}
+
+			if(
+				this.schema._[name].values instanceof Array &&
+				this.schema._[name].values.indexOf(value) === -1
+			){
+				this.$.addClass("error").attr("title", (this.invalid = "Invalid value"));
+				return;
+			}
+		}
+
+	
 		// Input Type Constraint
-		if( !this.value[0].checkValidity() ){
-			return this.$.addClass("error").attr("title", this.value[0].validationMessage) && false;
-		}*/
+		var inpVal;
+		if( typeof (inpVal = this.value.validate()) === "string" ){
+			this.$.addClass("error").attr("title", inpVal);
+			return;
+		}
+
 
 		// Valid
-		return true;
+		return (this.invalid = false);
 	};
 
 	return Parameter;

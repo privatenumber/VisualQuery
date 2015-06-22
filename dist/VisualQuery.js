@@ -10,11 +10,12 @@ module.exports = (function(){
 
 
 
-	function Input(name, value /*, type*/ ){
+	function Input(name, value){
 
 		// Inherit event emitter
 		EventEmitter.apply(this);
 
+		this.type = "text";
 		this.name = name;
 		
 		// Create DOM
@@ -26,45 +27,32 @@ module.exports = (function(){
 				})
 				.css("width", "1px");
 
-		if( value ){
+		if( typeof value === "string" ){
 			this.$._.value = value;	
 		}
+
 
 		this.bindEvents();
 	}
 
 	Input.prototype = Object.create(EventEmitter.prototype);
 
-	Input.prototype.toJSON = function(){
-		return this.$._.value;
+	Input.prototype.lean = function lean(){
+		return this.$._.value || "";
 	};
 
-	Input.prototype.previewValue = function(value){
+	Input.prototype.previewValue = function previewValue(value){
+
 		this.$
 			.attr("placeholder", value)
 			.trigger("input");
 	};
 
-	Input.prototype.focus = function(start){
-
-		this.$._.disabled = false;
-
-		if(
-			// this.$._.type !== "number" &&
-			typeof start === "number" &&
-			this.$._.setSelectionRange
-		){
-			// If start is -0 (+0 === -0 but Infinity =/= -Infinity)
-			if( (1/start) === -Infinity ){ start = this.$._.value.length; }
-
-			// Beacause of Chrome removing Select API on new input types (eg. number)
-			this.$._.setSelectionRange(start, start);
-		}
-
-		this.$._.focus();
+	Input.prototype.focus = function focus(start){
+		this.$.focus(start);
 	};
 
-	Input.prototype.changeValue = function(value){
+	Input.prototype.changeValue = function changeValue(value){
 
 		// Value
 		if( value ){
@@ -81,7 +69,7 @@ module.exports = (function(){
 		this.emit("nextInput");
 	};
 
-	Input.prototype.bindEvents = function(){
+	Input.prototype.bindEvents = function bindEvents(){
 		var self = this;
 
 		this.on("rendered", function(){
@@ -92,7 +80,6 @@ module.exports = (function(){
 			.on("focus", function(){ self.emit("focus"); })
 			.on("blur", function(){
 				self.emit("blur");
-				self.$._.disabled = true;
 			})
 			.on("change", function(){ self.emit("change"); })
 			.on("keydown", function(e){
@@ -111,7 +98,6 @@ module.exports = (function(){
 					// Focus Previous Parameter
 					self.emit("prevInput");
 				}
-
 
 				// Right: If the Caret is at the end of the input
 				if(
@@ -132,11 +118,35 @@ module.exports = (function(){
 
 		var value = this.$._.value;
 
-		// Length check
-		if( value.length === 0 ){ return false; }
+		var check;
+		
+		if( this.type === "number" && !(check = value.match(/^\d+$/)) ){
+			return "Not a number";
+		}
+
+		if( this.type === "time" && !(check = value.match(/^\d{1,2}:\d{2} (?:AM|PM)$/)) ){
+			return "Not a valid time format";
+		}
+
 
 		return true;
 	};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	return Input;
 })();
@@ -147,47 +157,51 @@ module.exports = (function(){
 
 	var E = require("Element");
 	var EventEmitter = require("EventEmitter");
-
-	var autoComplete = require("./autoComplete");
-
 	var Input = require("./Input");
 
 
-
 	// Create Parameter Class
-	function Parameter(collection, param){
+	function Parameter(param, autocomplete, schema){
 
 		// Inherit the event emitter
 		EventEmitter.apply(this);
 
-		this.collection = collection;
+		this.autocomplete = autocomplete;
+		this.schema = schema;
 
 		// Input DOMs
 		param = param || {};
 		this.name = new Input("name", param.name);
 		this.operator = new Input("operator", param.operator);
 		this.value = new Input("value", param.value);
-
+		
 		// Create DOM
 		this.$ = 	E("div", { "class": "parameter" })
 					.append(
+
+						// Delete button
 						E("span", { "class": "remove", "html": "&times;" })
 						.on("click", this.emit.bind(this, "remove")),
+
+						// Inputs
 						this.name.$,
 						this.operator.$,
 						this.value.$
 					);
+
+		this.validateInputs();
 
 		this.bindEvents();
 	}
 
 	Parameter.prototype = Object.create(EventEmitter.prototype);
 
-	Parameter.prototype.toJSON = function(){
+	Parameter.prototype.lean = function lean(){
 		return {
-			name: this.name.toJSON(),
-			operator: this.operator.toJSON(),
-			value: this.value.toJSON()
+			name: this.name.lean(),
+			operator: this.operator.lean(),
+			value: this.value.lean(),
+			invalid: this.invalid
 		};
 	};
 
@@ -228,21 +242,6 @@ module.exports = (function(){
 		this.bindOperator();
 
 		this.bindValue();
-
-		this.$.on("mousedown", function(e){
-			e.preventDefault();
-
-			if( !self.name.validate() ){
-				return self.name.focus();
-			}
-
-			if( !self.operator.validate() ){
-				return self.operator.focus();
-			}
-
-			self.value.focus();
-			
-		});
 	};
 
 	Parameter.prototype.bindName = function(){
@@ -257,22 +256,10 @@ module.exports = (function(){
 		.on("focus", function(){
 
 			// Add autocomplete
-			autoComplete(self.name.$, {
-				appendTo: self.collection.$,
-				datalist: self.collection.names
-			})
-			.on("hover", previewInput(self.name))
-			.on("selected", selected(self.name));
-		})
-
-		// Remove autocomplete
-		.on("blur", function(){
-			autoComplete(self.name.$);
-
-			// var type = self.collection.opts.schema[self.name.$._.value].type;
-			// if( type ){
-			// 	self.value.$._.type = type;
-			// }
+			self.autocomplete
+				.bindTo(self.name.$, self.schema.names)
+				.on("hover", previewInput(self.name))
+				.on("selected", selected(self.name));
 		});
 	};
 
@@ -284,18 +271,14 @@ module.exports = (function(){
 		.on("nextInput", function(){ self.value.focus(0); })
 		.on("prevInput", function(){ self.name.focus(-0); })
 		.on("focus", function(){
+			var schema = self.schema._[self.name.$._.value];
 
 			// Add autocomplete
-			autoComplete(self.operator.$, {
-				appendTo: self.collection.$,
-				datalist: self.collection.opts.schema[self.name.$._.value].operators
-			})
-			.on("hover", previewInput(self.operator))
-			.on("selected", selected(self.operator));
-		})
-
-		// Remove autocomplete
-		.on("blur", function(){ autoComplete(self.operator.$); });
+			self.autocomplete
+				.bindTo(self.operator.$, (schema instanceof Object && schema.operators instanceof Object) && schema.operators)
+				.on("hover", previewInput(self.operator))
+				.on("selected", selected(self.operator));
+		});
 	};
 
 	Parameter.prototype.bindValue = function(){
@@ -307,19 +290,30 @@ module.exports = (function(){
 		.on("prevInput", function(){ self.operator.focus(-0); })
 		.on("focus", function(){
 
-			if( self.value.$._.type !== "text" ){ return; }
+			var schema = self.schema._[self.name.$._.value];
 
 			// Add autocomplete
-			autoComplete(self.value.$, {
-				appendTo: self.collection.$,
-				datalist: self.collection.opts.schema[self.name.$._.value].values
-			})
-			.on("hover", previewInput(self.value))
-			.on("selected", selected(self.value));
-		})
+			self.autocomplete
+				.bindTo(self.value.$, (schema instanceof Object && schema.values instanceof Object) && schema.values)
+				.on("hover", previewInput(self.value))
+				.on("selected", selected(self.value));
 
-		// Remove autocomplete
-		.on("blur", function(){ autoComplete(self.value.$); });
+			if( !(schema instanceof Object) ){ return; }
+
+			// Type
+			if( typeof schema.type === "string" ){
+				self.value.type = schema.type;
+			}
+
+			// Placeholder
+			if(
+				(schema.valueAttrs instanceof Object) &&
+				typeof schema.valueAttrs.placeholder === "string"
+			){
+				self.value
+					.previewValue(schema.valueAttrs.placeholder);	
+			}
+		});
 	};
 
 	function previewInput(target){
@@ -345,240 +339,274 @@ module.exports = (function(){
 		// If All Empty, Delete
 		if( !(name + operator + value).length ){
 			this.emit("remove");
-			return false;
+			return;
 		}
 
 		// If Any of them is Empty
 		if( !name.length || !operator.length || !value.length ){
-			this.$.addClass("error");
-			return false;
-		}
-/*
-		// Invalid name && Strict => Error
-		if( options.strict && !parameters.hasOwnProperty(name) ){
-			return this.$.addClass("error").attr("title", "Invalid Parameter") && false;
+			this.$.addClass("error").attr("title", (this.invalid = "Incomplete parameter"));
+			return;
 		}
 
+		// Invalid name && Strict => Error
+		if( this.schema.strict ){
+			
+			if( !this.schema._.hasOwnProperty(name) ){
+				this.$.addClass("error").attr("title", (this.invalid = "Invalid name"));
+				return;
+			}
+			
+			if( this.schema._[name].operators.indexOf(operator) === -1 ){
+				this.$.addClass("error").attr("title", (this.invalid = "Invalid operator"));
+				return;
+			}
+
+			if(
+				this.schema._[name].values instanceof Array &&
+				this.schema._[name].values.indexOf(value) === -1
+			){
+				this.$.addClass("error").attr("title", (this.invalid = "Invalid value"));
+				return;
+			}
+		}
+
+	
 		// Input Type Constraint
-		if( !this.value[0].checkValidity() ){
-			return this.$.addClass("error").attr("title", this.value[0].validationMessage) && false;
-		}*/
+		var inpVal;
+		if( typeof (inpVal = this.value.validate()) === "string" ){
+			this.$.addClass("error").attr("title", inpVal);
+			return;
+		}
+
 
 		// Valid
-		return true;
+		return (this.invalid = false);
 	};
 
 	return Parameter;
 })();
-},{"./Input":1,"./autoComplete":5,"Element":7,"EventEmitter":8}],3:[function(require,module,exports){
+},{"./Input":1,"Element":7,"EventEmitter":8}],3:[function(require,module,exports){
 module.exports = (function(){
 
 	'use strict';
 
 	var E = require("Element");
-	
+	var EventEmitter = require("EventEmitter");
+
 	// Individual Parameter
 	var Parameter = require("./Parameter");
 
-
-	// Placeholder Text
-	var placeholder =	E("div", { "class": "placeholder" }).css("pointerEvents", "none");
-
-	// Main input field
-	var mainInput = E("div", { "class": "parameters" })
-					.append(placeholder)
-					.on("mousedown", function(e){
-
-						// Ignore Event Bubbling
-						if( e.target !== API.$._ ){ return; }
-
-						// Prevent so the Input Focuses
-						e.preventDefault();
-
-						// Determine insert location
-						var after = 0;
-						API.parameters.some(function(param, idx){
-
-							var position = param.$._.getBoundingClientRect();
-
-							var top = document.body.scrollTop + position.top;
-							if(
-								// Stop Iterating if Row is below
-								e.pageY < position.top ||
-
-								// If on row but passed it
-								(
-									top < e.pageY && e.pageY < (top + position.height) &&
-									position.left > e.pageX
-								)
-							){ return true; }
-
-							after = idx + 1;
-						});
-
-						// Create Parameter
-						API.insertAt(after, new Parameter(API), true);
-					});
+	var Autocomplete = require("./autoComplete");
 
 
-	var	API = {};
 
-		// Array of parameters
-		API.parameters = [];
+	function Parameters($container, options){
 
-		// Div Container For Parameters
-		API.$ =	mainInput;
+		var self = this;
 
-		// Initialize
-		API.init = function init(options){
+		EventEmitter.apply(self);
+		Array.apply(self);
 
-			this.opts = options;
-			console.log( this.opts );
-
-			// Placeholder text
-			placeholder.text(options.placeholder || "");
-
-			// Prepare datalists for auto complete
-			this.names = Object.keys(options.schema);
-			// options.schema.forEach(function(param){
-
-			// 	// Names key
-			// 	if( !self.aCdb.names ){ self.aCdb.names = []; }
-			// 	self.aCdb.names.push(param.name);
-				
-			// 	// Operatory key
-			// 	var opKey = param.name + "_operators";
-			// 	self.aCdb[opKey] = param.operators;
-
-			// 	// Values key
-			// 	var valKey = param.name + "_values";
-			// 	self.aCdb[valKey] = param.values;
-			// });
-
-			// Process default
-			this.opts.defaultQuery.forEach(function(param, i){
-				API.insertAt(i, new Parameter(API, param));
-			});
-
-			API.callback();
+		self.schema = {
+			strict: !!options.strict,
+			names: Object.keys(options.schema),
+			_: options.schema
 		};
 
-		function paramBindEvents(parameter){
-			parameter
-			.on("focus", function(){
-				// Toggle Class - Focus
-				API.$.addClass("selected");
-				API.focusCallback();
-			})
-			.on("blur", function(){
-				// Toggle Class - Blur
-				API.$.removeClass("selected");
-				API.blurCallback();
-			})
-			.on("remove", function(){
-				API.remove(parameter);
-			})
-			.on("change", function(){
-				API.callback();
-			})
-			.on("prevParameter", function(prev){
-				if( (prev = API.getPrev(parameter)) ){
-					prev.value.focus();
-				}else{
-					API.insertAt(0, new Parameter(API), true);
-				}
-			})
-			.on("nextParameter", function(next){
-				if( (next = API.getNext(parameter)) ){
-					next.name.focus(0);
-				}else{
-					API.insertAt(API.parameters.length, new Parameter(API), true);
-				}
-			});
+		/* DOMs */
+
+		// Placeholder
+		self.$placeholder =	E("div", { "class": "placeholder" })
+							.css("pointerEvents", "none")
+							.text(options.placeholder || "");
+
+		// Main input field
+		self.$inputField =	E("div", { "class": "parameters" })
+							.append( self.$placeholder )
+							.on("mousedown", function( e ){
+
+								// Ignore Event Bubbling
+								if( e.target !== self.$inputField._ ){ return; }
+
+								// Prevent so the Input Focuses
+								e.preventDefault();
+
+								// Determine insert location
+								var after = 0;
+								self.some(function(param, idx){
+
+									var position = param.$._.getBoundingClientRect();
+
+									var top = document.body.scrollTop + position.top;
+									if(
+										// Stop Iterating if Row is below
+										e.pageY < position.top ||
+
+										// If on row but passed it
+										(
+											top < e.pageY && e.pageY < (top + position.height) &&
+											position.left > e.pageX
+										)
+									){ return true; }
+
+									after = idx + 1;
+								});
+
+								// Create Parameter
+								self.insertAt(after, self.newParameter(), true);
+							});
+
+		self.autocomplete = new Autocomplete(self.$inputField);
+
+
+		// Process default
+		options.defaultQuery.forEach(function(param){
+			if( !(param instanceof Object) ){ return; }
+
+			self.insert(param);
+		});
+
+		// Render
+		self.appendTo($container);
+
+		// Event emitter starts listening after this function return, thus must be emitted after bind
+		setTimeout(function(){
+			self.emit("result", self.serialize());
+		}, 0);
+	}
+
+	Parameters.prototype = Object.create(EventEmitter.prototype);
+
+	// Inherit methods from Array
+	["length", "splice", "indexOf", "forEach", "map", "some"].forEach(function(prop){
+		Parameters.prototype[prop] = Array.prototype[prop];
+	});
+
+	Parameters.prototype.serialize = function serialize(){
+		return this.map(function(p){ return p.lean(); });
+	};
+
+	Parameters.prototype.newParameter = function newParameter(param){
+
+		var self = this,
+			parameter = new Parameter(param, self.autocomplete, self.schema);
+
+		return parameter
+		.on("focus", function(){
+			// Toggle Class - Focus
+			self.$inputField.addClass("selected");
+
+			self.emit("focus");
+		})
+		.on("blur", function(){
+			// Toggle Class - Blur
+			self.$inputField.removeClass("selected");
+
+			self.emit("blur");
+		})
+		.on("remove", function(){
+			self.remove(parameter);
+			self.emit("result", self.serialize());
+		})
+		.on("change", function(){
+			self.emit("result", self.serialize());
+		})
+		.on("prevParameter", function(prev){
+			if( (prev = self.getPrev(parameter)) ){
+				prev.value.focus();
+			}else{
+				self.insertAt(0, self.newParameter(), true);
+			}
+		})
+		.on("nextParameter", function(next){
+			if( (next = self.getNext(parameter)) ){
+				next.name.focus(0);
+			}else{
+				self.insert();
+			}
+		});
+	};
+
+	Parameters.prototype.insertAt = function insertAt(idx, parameter, focus){
+
+		// Hide placeholder
+		this.$placeholder.hide();
+
+		// Insert in DOM
+		if( this[idx] ){
+			this.$inputField._.insertBefore(parameter.$._, this[idx].$._);
 		}
+		else{ this.$inputField.append(parameter.$); }
 
-		API.insertAt = function insertAt(idx, parameter, focus){
+		// Insert in Array
+		this.splice(idx, 0, parameter);
 
-			// Hide placeholder
-			placeholder.hide();
+		// Focus
+		if( focus ){ parameter.name.focus(); }
+	};
 
-			// Insert in DOM
-			if( this.parameters[idx] ){
-				mainInput._.insertBefore(parameter.$._, this.parameters[idx].$._);
-			}
-			else{ this.$.append(parameter.$); }
+	Parameters.prototype.insert = function(param){
+		this.insertAt(this.length, this.newParameter(param), !param);
+	};
 
-			// Insert in Array
-			this.parameters.splice(idx, 0, parameter);
+	Parameters.prototype.removeAt = function removeAt(idx){
 
-			paramBindEvents(parameter);
+		// Remove from array
+		var removed = this.splice(idx, 1);
 
-			// Focus
-			if( focus ){ parameter.name.focus(); }
-		};
+		// Removed, remove DOM
+		if( removed.length === 1 ){ removed[0].$.remove(); }
 
-		API.removeAt = function removeAt(idx){
+		// Toggle Placeholder
+		if( this.length === 0 ){ this.$placeholder.show(); }
+	};
 
-			// Remove from array
-			var removed = this.parameters.splice(idx, 1);
+	Parameters.prototype.remove = function remove(parameter, find){
 
-			// Removed, remove DOM
-			if( removed.length === 1 ){ removed[0].$.remove(); }
+		// Ignore if not found
+		if( (find = this.indexOf(parameter)) === -1 ){ return false; }
 
-			// Toggle Placeholder
-			if( this.parameters.length === 0 ){ placeholder.show(); }
+		// Remove
+		this.removeAt( find );
+	};
 
-			API.callback();
-		};
+	Parameters.prototype.getPrev = function getPrev(current, i){
+		if( (i = this.indexOf(current)) !== -1 ){
+			return this[ i - 1 ];
+		}
+	};
 
-		API.remove = function remove(parameter, find){
+	Parameters.prototype.getNext = function getNext(current, i){
+		if( (i = this.indexOf(current)) !== -1 ){
+			return this[ i + 1 ];
+		}
+	};
 
-			// Ignore if not found
-			if( (find = this.parameters.indexOf(parameter)) === -1 ){ return false; }
+	Parameters.prototype.appendTo = function appendTo(target){
 
-			// Remove
-			this.removeAt( find );
-		};
+		// Render
+		E(target).append(this.$inputField);
 
-		API.getPrev = function getPrev(current, i){
-			if( (i = this.parameters.indexOf(current)) !== -1 ){
-				return this.parameters[ i - 1 ];
-			}
-		};
+		this.forEach(function(param){
+			param.emit("rendered");
+		});
+	};
 
-		API.getNext = function getNext(current, i){
-			if( (i = this.parameters.indexOf(current)) !== -1 ){
-				return this.parameters[ i + 1 ];
-			}
-		};
-
-		API.renderTo = function renderTo(target){
-
-			// Render
-			E(target).append(this.$);
-
-			this.parameters.forEach(function(param){
-				param.emit("rendered");
-			});
-		};
-
-		API.callback = function callback(){
-			API.opts.callback(API.parameters.map(function(p){ return p.toJSON(); }));
-		};
-
-	return API;
+	return Parameters;
 })();
-},{"./Parameter":2,"Element":7}],4:[function(require,module,exports){
+},{"./Parameter":2,"./autoComplete":5,"Element":7,"EventEmitter":8}],4:[function(require,module,exports){
 /* VisualQuery.js v0.2 | github.com/hirokiosame/VisualQuery */
 module.exports = function VisualQuery(selector, _options){
 
 	'use strict';
 
-	var selected;
+	var $selected;
+
+	/* Argument Validation */
 
 	// Check if query
 	if( typeof selector === "string" ){
-		selected = document.querySelector(selector);
+		$selected = document.querySelector(selector);
 	}
 
 	// Check if DOM
@@ -586,27 +614,22 @@ module.exports = function VisualQuery(selector, _options){
 		(typeof HTMLElement === "function" && selector instanceof HTMLElement) ||
 		(selector instanceof Object && selector.nodeType === 1 && typeof selector.nodeName === "string")
 	){
-		selected = selector;
+		$selected = selector;
 	}
 
 	// If nothing has been selected
-	if( !selected ){ throw new Error("No element is selected"); }
+	if( !$selected ){ throw new Error("No element is selected"); }
 
 
-	// Collection of Parameters - Singleton
-	var Parameters = require("./Parameters");
-
+	/* Set onfiguration  */
 
 	// Default Options
 	var options = Object.create({
 		appendAutoCompleteTo: null,
 		strict: false,
-		schema: [],
+		schema: {},
 		defaultQuery: [],
-		placeholder: "",
-		focusCallback: function(){},
-		blurCallback: function(){},
-		callback: function(){},
+		placeholder: ""
 	});
 
 	// Overwite default
@@ -614,62 +637,40 @@ module.exports = function VisualQuery(selector, _options){
 		options[prop] = _options[prop];
 	}
 
-	// Initialize
-	Parameters.init(options);
+	// Collection of Parameters - Singleton
+	var Parameters = require("./Parameters");
 
-	// Render
-	Parameters.renderTo(selected);
+	// Initialize
+	return (new Parameters($selected, options));
 };
 },{"./Parameters":3}],5:[function(require,module,exports){
 module.exports = (function(){
-
+	
 	'use strict';
 
 
 	var E = require("Element");
-	var EventEmitter = require("EventEmitter");
+
+	function Autocomplete( $parent ){
+
+		this.$ul =	E("ul", { "class": "autoComplete" })
+					.css("position", "absolute")
+					.hide();
+
+		this.lis = [];
+		this.selectedLi = null;
 
 
-	var ul = E("ul", { "class": "autoComplete" })
-				.css("position", "absolute")
-				.hide();
+		(this.$parent = $parent)
+			.append( this.$ul )
+			.on("scroll", this.adjustLocation.bind(this));
 
 
-	var LIs = (function(){
 
-		var input = null, EE = null;
+		var self = this;
 
-		var lis = [], selected = null;
-
-		function select(li){
-
-			// Unselect currently selected
-			if( selected ){ selected.removeClass("selected"); }
-
-			selected = E(li).addClass("selected");
-
-			EE.emit("hover", selected.text());
-		}
-
-		function onInput(){
-
-			// If Typed Doesn't match, Don't show
-			var hidden = 0;
-			for( var i = 0; i < lis.length; i++ ){
-				if( lis[i]._.innerText.match(new RegExp(this.value, "i")) ){
-					lis[i].show();
-				}else{
-					lis[i].hide();
-					hidden++;
-				}
-			}
-
-			// Show or hide the list
-			if( hidden === lis.length ){ ul.hide(); }
-			else{ ul.show(); }
-		}
-
-		function onKeydown(e){
+		// Event based functions, must bind to self via closure
+		this.onKeydown = function onKeydown(e){
 
 			// Up
 			if( e.keyCode === 38 ){
@@ -677,11 +678,11 @@ module.exports = (function(){
 				var prev;
 				if(
 					// Currently selected is still displayed
-					(selected && selected.shown()) &&
-					(prev = selected.prev()) && prev.shown()
+					(self.selectedLi && self.selectedLi.shown()) &&
+					(prev = self.selectedLi.prev()) && prev.shown()
 				){
 					e.preventDefault();
-					select(prev);
+					self.selectLi(prev);
 				}
 			}
 
@@ -689,22 +690,23 @@ module.exports = (function(){
 			if( e.keyCode === 40 ){
 
 				// If already selected, go to next
-				if( selected && selected.shown() ){
+				if( self.selectedLi && self.selectedLi.shown() ){
 
 					var next;
-					if( (next = selected.next()) && next.shown() ){
+					if( (next = self.selectedLi.next()) && next.shown() ){
 						e.preventDefault();
-						select(next);
+						self.selectLi(next);
 					}
 
 				// Select first visible li if not selected yet
 				}else{
 
 					var i;
-					for( i = 0; i < lis.length; i++ ){
-						if( lis[i].shown() ){
+					for( i = 0; i < self.lis.length; i++ ){
+
+						if( self.lis[i].shown() ){
 							e.preventDefault();
-							select(lis[i]);
+							self.selectLi(self.lis[i]);
 							break;
 						}
 					}
@@ -713,138 +715,162 @@ module.exports = (function(){
 
 			// Enter
 			if( e.keyCode === 13 ){
-				if( selected && selected.shown() ){
-					EE.emit(
+
+				if( self.selectedLi && self.selectedLi.shown() ){
+					self.EE.emit(
 						"selected",
-						selected.text(),
-						selected.attr("value")
+						self.selectedLi.text(),
+						self.selectedLi.attr("value")
 					);
 				}else{
-					EE.emit("selected");
+					self.EE.emit("selected");
 				}
 			}
-		}
-	
-		function createLi(text, value){
-			var li = 	E("li", { text: text })
-						.on("mouseover", function(){ select(this); })
-						.on("mousedown", function(e){ e.preventDefault(); })
-						.on("mouseup", function(){
-							if( selected && selected.shown() ){
-								EE.emit(
-									"selected",
-									selected.text(),
-									selected.attr("value")
-								);	
-							}
-						});
 
-
-			if( value ){ li.attr("value", value); }
-
-			return li;
-		}
-
-		return {
-			setDatalist: function (datalist){
-
-				// Empty array
-				lis.splice(0);
-
-				// Add every li
-				for(var key in datalist){
-					lis.push( createLi(datalist[key], !(datalist instanceof Array) && key ) );
-				}
-
-				// Reset Lis
-				ul.html("").append(lis);
-
-				return this;
-			},
-			listenTo: function(_input){
-
-				// Unlisten from previous input
-				if( input ){
-
-					selected = null;
-
-					input
-						.off("keydown", onKeydown)
-						.off("input", onInput);
-				}
-
-				input = _input;
-
-				EE = new EventEmitter();
-
-				input
-					.on("keydown", onKeydown)
-					.on("input", onInput);
-
-				// Trigger for current input value
-				onInput.apply(input._);
-
-				return EE;
-			}
 		};
-	})();
 
-	var appendedTo,
-		inputEl;
+		this.onInput = function onInput(){
 
-	function adjustLocation(){
+			// If Typed Doesn't match, Don't show
+			var hidden = 0;
+			for( var i = 0; i < self.lis.length; i++ ){
+				if( self.lis[i].text().match(new RegExp(this.value, "i")) ){
+					self.lis[i].show();
+				}else{
+					self.lis[i].hide();
+					hidden++;
+				}
+			}
 
-		var rectContain = appendedTo._.getBoundingClientRect(),
-			rectIn = inputEl._.getBoundingClientRect();
+			// Show or hide the list
+			if( hidden === self.lis.length ){ self.$ul.hide(); }
+			else{ self.$ul.show(); }
+		};
 
+
+		this.hide = function hide(){
+			self.$ul.hide();
+		};
+
+	}
+
+	Autocomplete.prototype.adjustLocation = function adjustLocation(){
+
+		var rectContain = this.$parent._.getBoundingClientRect(),
+			rectIn = this.$input._.getBoundingClientRect();
+
+		// If outside the visible area of scroll
 		if( !(rectContain.left < rectIn.left && rectIn.left < rectContain.left + rectContain.width) ){
-			ul.hide(); return;
+			this.$ul.hide(); return;
 		}
 
 
-		ul.show().offset(0, 0);
+		this.$ul.show().offset(0, 0);
 
-		var	rectUl = ul._.getBoundingClientRect();
+		var	rectUl = this.$ul._.getBoundingClientRect();
 
-		ul
+		this.$ul
 		.offset(
 			(rectIn.top - rectUl.top + rectIn.height) + "px",
 			(rectIn.left - rectUl.left) + "px"
 		);
-	}
-
-	return function(el, options){
-
-		// Enforce input-text
-		if( el._.tagName !== "INPUT" || el.attr("type") !== "text" ){
-			throw new Error("Autocomplete must be bound to an input-text element");
-		}
-
-		// Unbind
-		if( !(options instanceof Object) ){
-			ul.hide();
-			inputEl.off("scroll", adjustLocation);
-			appendedTo.off("scroll", adjustLocation);
-			return;
-		}
-
-		// Verify that appendTo exists
-		if( !options.appendTo ){
-			throw new Error("The appendTo property is required to render the auto complete");
-		}
-
-
-		inputEl = el.on("input", adjustLocation);
-		(appendedTo = options.appendTo)
-			.append(ul)
-			.on("scroll", adjustLocation);
-
-		adjustLocation();
-
-		return	LIs
-				.setDatalist(options.datalist)
-				.listenTo(el);
 	};
+
+
+	Autocomplete.prototype.selectLi = function selectLi(li){
+
+		// Unselect currently selected
+		if( this.selectedLi ){ this.selectedLi.removeClass("selected"); }
+
+		this.selectedLi = E(li).addClass("selected");
+
+		this.EE.emit("hover", this.selectedLi.text());
+
+		this.adjustLocation();
+	};
+
+	Autocomplete.prototype.createLi = function createLi(text, value){
+		var self = this;
+
+		var li = 	E("li", { text: text })
+					.on("mouseover", function(){ self.selectLi(this); })
+					.on("mousedown", function(e){ e.preventDefault(); })
+					.on("mouseup", function(){
+						if( self.selectedLi && self.selectedLi.shown() ){
+							self.EE.emit(
+								"selected",
+								self.selectedLi.text(),
+								self.selectedLi.attr("value")
+							);
+						}
+					});
+
+
+		if( value ){ li.attr("value", value); }
+
+		return li;
+	};
+
+	Autocomplete.prototype.setList = function setList(list){
+
+		// Empty array
+		this.lis.splice(0);
+
+
+		if( list instanceof Array ){
+
+			// Add every li
+			for( var key in list ){
+				this.lis.push( this.createLi(list[key], !(list instanceof Array) && key ) );
+			}
+		}
+
+		// Reset Lis
+		this.$ul.html("").append(this.lis);
+	};
+
+
+
+	Autocomplete.prototype.bindTo = function bindTo($input, list){
+
+		// Unbind from previous input
+		if( this.$input ){
+
+			// Unbind!
+			this.$input
+				.off("keydown", this.onKeydown)
+				.off("input", this.onInput)
+				.off("blur", this.hide);
+
+			this.$input = null;
+			this.EE = null;
+		}
+
+		var EventEmitter = require("EventEmitter");
+
+		this.EE = new EventEmitter();
+
+		// If there are suggestions to make...
+		// if( list instanceof Array && list.length > 0 ){
+
+			this.$input =	$input
+							.on("keydown", this.onKeydown)
+							.on("input", this.onInput)
+							.on("blur", this.hide);
+
+			this.setList(list);
+			this.adjustLocation();
+			this.onInput.apply($input._);
+		// }
+
+		return this.EE;
+	};
+
+
+
+
+
+	return Autocomplete;
 })();
 },{"Element":7,"EventEmitter":8}],6:[function(require,module,exports){
 module.exports = function inputResize(){
@@ -854,7 +880,6 @@ module.exports = function inputResize(){
 	var	value = this.value,
 		useText = value || ( this.attributes.placeholder && this.attributes.placeholder.value ) || "";
 	
-
 	var shadow = document.createElement("span");
 	
 	shadow.textContent = useText;
@@ -879,14 +904,10 @@ module.exports = function inputResize(){
 		shadow.style[ruleName] = computedStyle[ruleName];
 	});
 	
-
-	
 	// Insert below
 	this.parentNode.appendChild(shadow);
 	
 	// Set Width
-	
-	
 	this.style.width = (
 		
 		// Width of Shadow + Fallback Width for Empty Inputs
@@ -941,7 +962,8 @@ module.exports = (function(){
 	};
 
 	E.prototype.shown = function shown(){
-		return this._.style.display !== "none";
+		return	( this._ === document ) ||
+				( this._.style.display !== "none" && this._.parentNode !== null );
 	};
 
 	E.prototype.on = function on(eventNames, eventCallback, useCapture){
@@ -1017,9 +1039,14 @@ module.exports = (function(){
 
 		var args = arr instanceof Array ? arr : arguments;
 
+		// To avoid reflows
+		var container = document.createDocumentFragment();
+
 		for( var i = 0, len = args.length; i < len; i++ ){
-			this._.appendChild( args[i] instanceof E ? args[i]._ : args[i] );
+			container.appendChild( args[i] instanceof E ? args[i]._ : args[i] );
 		}
+
+		this._.appendChild(container);
 
 		return this;
 	};
@@ -1117,6 +1144,28 @@ module.exports = (function(){
 		return this;
 	};
 
+	E.prototype.focus = function focus(caretStart, caretEnd){
+		
+	 	// Focus element
+		this._.focus();
+
+		if( typeof caretStart === "number" ){
+
+			// If start is -0, set at the very end
+			// (+0 === -0 but Infinity =/= -Infinity)
+			if( (1/caretStart) === -Infinity ){ caretStart = this._.value.length; }
+
+			if( typeof caretEnd !== "number" ){ caretEnd = caretStart; }
+
+			try{
+				this._.setSelectionRange( caretStart, caretEnd );
+			}
+			catch(err){}
+		}
+
+		return this;
+	};
+
 	E.prototype.prev = function prev(){
 		if( this._.previousSibling ){
 			return new E(this._.previousSibling);	
@@ -1201,11 +1250,97 @@ module.exports = (function(){
 	};
 })();
 },{}],8:[function(require,module,exports){
-(function (global){
-(function(g){"object"===typeof exports&&"undefined"!==typeof module?module.exports=g():"function"===typeof define&&define.amd?define([],g):("undefined"!==typeof window?window:"undefined"!==typeof global?global:"undefined"!==typeof self?self:this).EventEmitter=g()})(function(){return function h(d,f,a){function e(b,l){if(!f[b]){if(!d[b]){var c="function"==typeof require&&require;if(!l&&c)return c(b,!0);if(k)return k(b,!0);c=Error("Cannot find module '"+b+"'");throw c.code="MODULE_NOT_FOUND",c;}c=f[b]=
-{exports:{}};d[b][0].call(c.exports,function(c){var a=d[b][1][c];return e(a?a:c)},c,c.exports,h,d,f,a)}return f[b].exports}for(var k="function"==typeof require&&require,b=0;b<a.length;b++)e(a[b]);return e}({1:[function(h,d,f){d.exports=function(){function a(){this._events={}}a.prototype.on=function(e,a){this._events instanceof Object||(this._events={});this._events[e]instanceof Array||(this._events[e]=[]);this._events[e].push(a);return this};a.prototype.off=function(a,d){this._events instanceof Object||
-(this._events={});if(!(this._events[a]instanceof Array))return!1;var b=this._events[a];b.splice(b.indexOf(d),1);return this};a.prototype.emit=function(a){this._events instanceof Object||(this._events={});if(!(this._events[a]instanceof Array))return!1;var d=[].slice.apply(arguments,[1]);this._events[a].forEach(function(a){a instanceof Function&&a.apply(null,d)})};return a}()},{}]},{},[1])(1)});
+module.exports = (function(){
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+	'use strict';
+
+	function EventEmitter(async){
+		this._events = {};
+		this.async = !!async;
+	}
+
+	EventEmitter.prototype.on = function on(eName, fn){
+
+		// Must be an object
+		if( !(this._events instanceof Object) ){ this._events = {}; }
+
+		var arr;
+
+		// Must be an array
+		if( !((arr = this._events[eName]) instanceof Array) ){
+			(arr = this._events[eName] = []);
+		}
+
+		// Add function
+		arr.push(fn);
+
+		return this;
+	};
+
+	EventEmitter.prototype.off = function off(eName, fn){
+
+		// If events not initialized or
+		// If no event name, remove all events
+		if(
+			!(this._events instanceof Object) ||
+			eName === undefined
+		){ this._events = {}; }
+
+
+		var arr, idx;
+
+		// If no events to remove
+		if( !((arr = this._events[eName]) instanceof Array) ){
+			return false;
+		}
+
+		// Remove all
+		if( fn === undefined ){
+			arr.splice(0);
+		}
+
+		// Remove function
+		else if( (idx = arr.indexOf(fn)) !== -1 ){
+			arr.splice(idx, 1);
+		}
+
+
+		return this;
+	};
+
+	EventEmitter.prototype.emit = function emit(eName){
+
+		// Must be an object
+		if( !(this._events instanceof Object) ){ this._events = {}; }
+
+		// Must be an array
+		if( !(this._events[eName] instanceof Array) ){ return false; }
+
+		// Slice out the arguments for emit
+		var args = [].slice.apply(arguments, [1]);
+
+		// Trigger each
+		var evnts = this._events[eName],
+			cb;
+
+		for( var i = 0, len = evnts.length; i < len; i++ ){
+
+			// Validate function
+			if( !((cb = evnts[i]) instanceof Function) ){ continue; }
+
+			// Trigger asynchronously
+			if( this.async === true ){
+				setTimeout((function(self, cb, args){
+					return function(){ cb.apply(self, args); };
+				})(this, cb, args), 0);
+			}else{
+				cb.apply(this, args);
+			}
+		}
+	};
+
+	return EventEmitter;
+
+})();
 },{}]},{},[4])(4)
 });

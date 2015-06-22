@@ -3,195 +3,206 @@ module.exports = (function(){
 	'use strict';
 
 	var E = require("Element");
-	
+	var EventEmitter = require("EventEmitter");
+
 	// Individual Parameter
 	var Parameter = require("./Parameter");
 
-
-	// Placeholder Text
-	var placeholder =	E("div", { "class": "placeholder" }).css("pointerEvents", "none");
-
-	// Main input field
-	var mainInput = E("div", { "class": "parameters" })
-					.append(placeholder)
-					.on("mousedown", function(e){
-
-						// Ignore Event Bubbling
-						if( e.target !== API.$._ ){ return; }
-
-						// Prevent so the Input Focuses
-						e.preventDefault();
-
-						// Determine insert location
-						var after = 0;
-						API.parameters.some(function(param, idx){
-
-							var position = param.$._.getBoundingClientRect();
-
-							var top = document.body.scrollTop + position.top;
-							if(
-								// Stop Iterating if Row is below
-								e.pageY < position.top ||
-
-								// If on row but passed it
-								(
-									top < e.pageY && e.pageY < (top + position.height) &&
-									position.left > e.pageX
-								)
-							){ return true; }
-
-							after = idx + 1;
-						});
-
-						// Create Parameter
-						API.insertAt(after, new Parameter(API), true);
-					});
+	var Autocomplete = require("./autoComplete");
 
 
-	var	API = {};
 
-		// Array of parameters
-		API.parameters = [];
+	function Parameters($container, options){
 
-		// Div Container For Parameters
-		API.$ =	mainInput;
+		var self = this;
 
-		// Initialize
-		API.init = function init(options){
+		EventEmitter.apply(self);
+		Array.apply(self);
 
-			this.opts = options;
-			console.log( this.opts );
-
-			// Placeholder text
-			placeholder.text(options.placeholder || "");
-
-			// Prepare datalists for auto complete
-			this.names = Object.keys(options.schema);
-			// options.schema.forEach(function(param){
-
-			// 	// Names key
-			// 	if( !self.aCdb.names ){ self.aCdb.names = []; }
-			// 	self.aCdb.names.push(param.name);
-				
-			// 	// Operatory key
-			// 	var opKey = param.name + "_operators";
-			// 	self.aCdb[opKey] = param.operators;
-
-			// 	// Values key
-			// 	var valKey = param.name + "_values";
-			// 	self.aCdb[valKey] = param.values;
-			// });
-
-			// Process default
-			this.opts.defaultQuery.forEach(function(param, i){
-				API.insertAt(i, new Parameter(API, param));
-			});
-
-			API.callback();
+		self.schema = {
+			strict: !!options.strict,
+			names: Object.keys(options.schema),
+			_: options.schema
 		};
 
-		function paramBindEvents(parameter){
-			parameter
-			.on("focus", function(){
-				// Toggle Class - Focus
-				API.$.addClass("selected");
-				API.opts.focusCallback();
-			})
-			.on("blur", function(){
-				// Toggle Class - Blur
-				API.$.removeClass("selected");
-				API.opts.blurCallback();
-			})
-			.on("remove", function(){
-				API.remove(parameter);
-			})
-			.on("change", function(){
-				API.callback();
-			})
-			.on("prevParameter", function(prev){
-				if( (prev = API.getPrev(parameter)) ){
-					prev.value.focus();
-				}else{
-					API.insertAt(0, new Parameter(API), true);
-				}
-			})
-			.on("nextParameter", function(next){
-				if( (next = API.getNext(parameter)) ){
-					next.name.focus(0);
-				}else{
-					API.insertAt(API.parameters.length, new Parameter(API), true);
-				}
-			});
+		/* DOMs */
+
+		// Placeholder
+		self.$placeholder =	E("div", { "class": "placeholder" })
+							.css("pointerEvents", "none")
+							.text(options.placeholder || "");
+
+		// Main input field
+		self.$inputField =	E("div", { "class": "parameters" })
+							.append( self.$placeholder )
+							.on("mousedown", function( e ){
+
+								// Ignore Event Bubbling
+								if( e.target !== self.$inputField._ ){ return; }
+
+								// Prevent so the Input Focuses
+								e.preventDefault();
+
+								// Determine insert location
+								var after = 0;
+								self.some(function(param, idx){
+
+									var position = param.$._.getBoundingClientRect();
+
+									var top = document.body.scrollTop + position.top;
+									if(
+										// Stop Iterating if Row is below
+										e.pageY < position.top ||
+
+										// If on row but passed it
+										(
+											top < e.pageY && e.pageY < (top + position.height) &&
+											position.left > e.pageX
+										)
+									){ return true; }
+
+									after = idx + 1;
+								});
+
+								// Create Parameter
+								self.insertAt(after, self.newParameter(), true);
+							});
+
+		self.autocomplete = new Autocomplete(self.$inputField);
+
+
+		// Process default
+		options.defaultQuery.forEach(function(param){
+			if( !(param instanceof Object) ){ return; }
+
+			self.insert(param);
+		});
+
+		// Render
+		self.appendTo($container);
+
+		// Event emitter starts listening after this function return, thus must be emitted after bind
+		setTimeout(function(){
+			self.emit("result", self.serialize());
+		}, 0);
+	}
+
+	Parameters.prototype = Object.create(EventEmitter.prototype);
+
+	// Inherit methods from Array
+	["length", "splice", "indexOf", "forEach", "map", "some"].forEach(function(prop){
+		Parameters.prototype[prop] = Array.prototype[prop];
+	});
+
+	Parameters.prototype.serialize = function serialize(){
+		return this.map(function(p){ return p.lean(); });
+	};
+
+	Parameters.prototype.newParameter = function newParameter(param){
+
+		var self = this,
+			parameter = new Parameter(param, self.autocomplete, self.schema);
+
+		return parameter
+		.on("focus", function(){
+			// Toggle Class - Focus
+			self.$inputField.addClass("selected");
+
+			self.emit("focus");
+		})
+		.on("blur", function(){
+			// Toggle Class - Blur
+			self.$inputField.removeClass("selected");
+
+			self.emit("blur");
+		})
+		.on("remove", function(){
+			self.remove(parameter);
+			self.emit("result", self.serialize());
+		})
+		.on("change", function(){
+			self.emit("result", self.serialize());
+		})
+		.on("prevParameter", function(prev){
+			if( (prev = self.getPrev(parameter)) ){
+				prev.value.focus();
+			}else{
+				self.insertAt(0, self.newParameter(), true);
+			}
+		})
+		.on("nextParameter", function(next){
+			if( (next = self.getNext(parameter)) ){
+				next.name.focus(0);
+			}else{
+				self.insert();
+			}
+		});
+	};
+
+	Parameters.prototype.insertAt = function insertAt(idx, parameter, focus){
+
+		// Hide placeholder
+		this.$placeholder.hide();
+
+		// Insert in DOM
+		if( this[idx] ){
+			this.$inputField._.insertBefore(parameter.$._, this[idx].$._);
 		}
+		else{ this.$inputField.append(parameter.$); }
 
-		API.insertAt = function insertAt(idx, parameter, focus){
+		// Insert in Array
+		this.splice(idx, 0, parameter);
 
-			// Hide placeholder
-			placeholder.hide();
+		// Focus
+		if( focus ){ parameter.name.focus(); }
+	};
 
-			// Insert in DOM
-			if( this.parameters[idx] ){
-				mainInput._.insertBefore(parameter.$._, this.parameters[idx].$._);
-			}
-			else{ this.$.append(parameter.$); }
+	Parameters.prototype.insert = function(param){
+		this.insertAt(this.length, this.newParameter(param), !param);
+	};
 
-			// Insert in Array
-			this.parameters.splice(idx, 0, parameter);
+	Parameters.prototype.removeAt = function removeAt(idx){
 
-			paramBindEvents(parameter);
+		// Remove from array
+		var removed = this.splice(idx, 1);
 
-			// Focus
-			if( focus ){ parameter.name.focus(); }
-		};
+		// Removed, remove DOM
+		if( removed.length === 1 ){ removed[0].$.remove(); }
 
-		API.removeAt = function removeAt(idx){
+		// Toggle Placeholder
+		if( this.length === 0 ){ this.$placeholder.show(); }
+	};
 
-			// Remove from array
-			var removed = this.parameters.splice(idx, 1);
+	Parameters.prototype.remove = function remove(parameter, find){
 
-			// Removed, remove DOM
-			if( removed.length === 1 ){ removed[0].$.remove(); }
+		// Ignore if not found
+		if( (find = this.indexOf(parameter)) === -1 ){ return false; }
 
-			// Toggle Placeholder
-			if( this.parameters.length === 0 ){ placeholder.show(); }
+		// Remove
+		this.removeAt( find );
+	};
 
-			API.callback();
-		};
+	Parameters.prototype.getPrev = function getPrev(current, i){
+		if( (i = this.indexOf(current)) !== -1 ){
+			return this[ i - 1 ];
+		}
+	};
 
-		API.remove = function remove(parameter, find){
+	Parameters.prototype.getNext = function getNext(current, i){
+		if( (i = this.indexOf(current)) !== -1 ){
+			return this[ i + 1 ];
+		}
+	};
 
-			// Ignore if not found
-			if( (find = this.parameters.indexOf(parameter)) === -1 ){ return false; }
+	Parameters.prototype.appendTo = function appendTo(target){
 
-			// Remove
-			this.removeAt( find );
-		};
+		// Render
+		E(target).append(this.$inputField);
 
-		API.getPrev = function getPrev(current, i){
-			if( (i = this.parameters.indexOf(current)) !== -1 ){
-				return this.parameters[ i - 1 ];
-			}
-		};
+		this.forEach(function(param){
+			param.emit("rendered");
+		});
+	};
 
-		API.getNext = function getNext(current, i){
-			if( (i = this.parameters.indexOf(current)) !== -1 ){
-				return this.parameters[ i + 1 ];
-			}
-		};
-
-		API.renderTo = function renderTo(target){
-
-			// Render
-			E(target).append(this.$);
-
-			this.parameters.forEach(function(param){
-				param.emit("rendered");
-			});
-		};
-
-		API.callback = function callback(){
-			API.opts.callback(API.parameters.map(function(p){ return p.toJSON(); }));
-		};
-
-	return API;
+	return Parameters;
 })();

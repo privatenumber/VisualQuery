@@ -1,6 +1,9 @@
 VisualQuery("div#anydiv", {
 	strict: true,	//Limit inputs where parameters are defined,
 
+	placeholder: "Look up countries...",
+
+
 	//	Supported Input Types:
 	//		text, email, number, url
 	schema: {
@@ -17,13 +20,29 @@ VisualQuery("div#anydiv", {
 		"Population": {
 			operators: ["is", "is greater than", "is less than"],
 			type: "number",
-			valueAttrs: { "placeholder": "In millions", "min": 1, "max": 3 }
+			valueAttrs: {
+				"placeholder": "In millions",
+				"min": 1,
+				"max": 3
+			}
 		},
 
 		"Area": {
 			operators: ["is", "is greater than", "is less than"],
 			type: "number",
-			valueAttrs: { "placeholder": "In sq mi", "min": 100, "max": 1000000 }
+			valueAttrs: {
+				"placeholder": "In sq mi",
+				"min": 100,
+				"max": 1000000
+			}
+		},
+
+		"Time": {
+			operators: ["is", "is after", "is before"],
+			type: "time",
+			valueAttrs: {
+				"placeholder": "00:00 AM"
+			}
 		}
 	},
 	defaultQuery: [
@@ -42,35 +61,38 @@ VisualQuery("div#anydiv", {
 			operator: "is",
 			value: "Europe"
 		}
-	],
-	placeholder: "Look up countries...",
-	callback: function(searched){
+	]
+})
+.on("result", function(searched){
 
-		var operators = {
-			"is": "=",
-			"is not": "!=",
-			"is greater than": ">",
-			"is less than": "<"
-		};
+	console.log( searched );
 
-		$("#sql div").text(
-			"SELECT * FROM `table` WHERE " + (searched.map(function(e){
-				return "`" + e.name + "` " + operators[e.operator] + " '" + e.value + "'";
-			}).join(" AND ") || "...") + ";"
-		);
+	var operators = {
+		"is": "=",
+		"is not": "!=",
+		"is greater than": ">",
+		"is less than": "<",
+		"": ""
+	};
+
+	$("#sql div").text(
+		"SELECT * FROM `table` WHERE " + (searched.map(function(e){
+			return "`" + e.name + "` " + operators[e.operator] + " '" + e.value + "'";
+		}).join(" AND ") || "...") + ";"
+	);
 
 
-		var operators = {
-			"is": "eq",
-			"is not": "ne",
-			"is greater than": "gt",
-			"is less than": "lt"
-		};
-		var mongodb = {};
-		searched.forEach(function(e){
-			(mongodb[e.name] = {})["$"+operators[e.operator]] = e.value;
-		});
+	var operators = {
+		"is": "eq",
+		"is not": "ne",
+		"is greater than": "gt",
+		"is less than": "lt",
+		"": ""
+	};
+	var mongodb = {};
+	searched.forEach(function(e){
+		(mongodb[e.name] = {})["$"+operators[e.operator]] = e.value;
+	});
 
-		$("#mongodb div").text("db.collection.find("+JSON.stringify(mongodb)+");");
-	}
+	$("#mongodb div").text("db.collection.find("+JSON.stringify(mongodb)+");");
 });
