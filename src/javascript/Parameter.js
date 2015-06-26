@@ -71,13 +71,14 @@ module.exports = (function(){
 					self.$.removeClass("error").addClass("selected");
 				})
 				.on("blur", function(){
-					self.emit("blur");
 
 					// Remove Selected Class from Parameter
 					self.$.removeClass("selected");
 
 					// Validate
 					self.validateInputs();
+					
+					self.emit("blur");
 				})
 				.on("change", function(){ 
 					self.emit("change");
